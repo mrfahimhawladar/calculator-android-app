@@ -50,4 +50,5 @@ Repeat these stages while the current run budget permits, until STOP or a real b
 - Never auto-merge or expose tokens, PATs, keys or credentials. Continue useful work when CodeRabbit/CI is pending, but do not make unrelated commits to the same reviewed PR.
 
 ## End-of-run report
+
 Always choose an explicit overall status: `completed`, `partial`, `blocked`, `pending` or `failed`. Then report completed work; exact SHA/CI/test evidence; CodeRabbit status for each current PR head; source/Master artifact path, bytes and checksum; actual Library upload result; fresh toolchain/build/APK status; runner status (`verified`, `not deployed` or `unknown`); blocker and one next action. Never claim 24/7 autonomous execution unless a persistent runner is actually deployed and independently health-checked.
