@@ -1,26 +1,27 @@
 # Calculator Android — Implementation Blocker Report
 
-**Report date:** 2026-10-22  
-**Repository:** https://github.com/mrfahimhawladar/calculator-android-app  
-**Priority:** High
+Updated: 2026-10-22
+Repository: https://github.com/mrfahimhawladar/calculator-android-app
 
-## Completed in repository
-- README, .gitignore, AGENTS.md, package metadata, Capacitor app identity, web UI source, calculator engine and 18 regression tests are committed.
-- GitHub write access was tested successfully via a real README commit. No PAT was used.
-- Source is offline-first; no analytics, remote API or credentials are included.
+## Completed and independently observed
+- README, .gitignore, AGENTS.md, package.json, Capacitor config, web source and 18 regression tests are committed to main.
+- .github/workflows/ci.yml exists and a push-triggered run completed successfully: https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39755522253
+- The Source CI job completed successfully: dependency install, regression tests, web build and generated-output checks.
+- The manual Android APK workflow, Android Doctor, SDK bootstrap, debug build helper and this report are committed.
+- No PAT was used or written to project files.
 
-## Remaining blockers
-1. Android workflow and SDK/build scripts still need to be committed and then read back from GitHub to verify exact contents.
-2. A native debug APK has not been built or verified.
-3. The connected tools in this session provide GitHub file/commit operations and read-only Actions inspection but no workflow-dispatch operation. The repository workflow uses a manual acknowledgement of SDK license terms, so do not silently bypass that legal gate.
-4. The local sandbox previously lacked Android SDK/Gradle and failed DNS for npm, Google SDK, Gradle and Maven hosts. A hosted Actions runner is the intended build environment.
+## Not yet complete
+1. A native Android APK has not yet been generated or verified. No artifact claim is made.
+2. The Android APK workflow intentionally requires manual acknowledgement of Android SDK license terms.
+3. This session has GitHub file-write and Actions read/inspect capability but no workflow-dispatch action. Therefore the manual APK workflow cannot be started using the available integration tools in this run.
+4. The local sandbox was missing Android SDK/Gradle, and download hosts failed DNS with EAI_AGAIN. A hosted Actions runner is intended for native packaging.
 
-## Direct implementation plan
-1. Commit `.github/workflows/android-debug-apk.yml`, the Android helper scripts and the test/build documentation.
-2. Verify `package.json`, core engine, UI, workflow, and scripts by fetching them back from `main`.
-3. Run the pure-JS CI workflow from a push event; confirm tests and web build pass.
-4. Open GitHub Actions, select **Build Android Debug APK**, review SDK license terms, enable `accept_android_sdk_licenses`, and run it.
-5. Inspect job logs and download `Calculator-debug-APK`; only call it complete after signature, archive, manifest, DEX, package name, label and SHA-256 checks pass.
+## Next direct implementation
+1. Open: https://github.com/mrfahimhawladar/calculator-android-app/actions/workflows/android-debug-apk.yml
+2. Choose Build Android Debug APK, then Run workflow on main.
+3. Read and agree to the SDK license terms before enabling accept_android_sdk_licenses.
+4. Inspect logs and download the Calculator-debug-APK artifact.
+5. Verify APK signature, ZIP integrity, manifest, DEX, app ID app.calculator.offline, label Calculator, and matching SHA-256 sidecar.
 
 ## Security
-Never store or paste a PAT into this repository, notebooks, source, logs or workflow YAML. The previously exposed token must be revoked if it is still active.
+Do not paste or save PATs, OAuth tokens, signing keys or passwords. If a token was pasted into chat and is still active, revoke it.
