@@ -10,9 +10,9 @@ self-merging AI process.
 
 1. Make each code change on a topic branch and open or update a pull request to `main`.
    Do not make normal application-code changes directly to `main`.
-2. The existing `Calculator Source CI` workflow runs on pull requests and pushes to
-   `main`, and daily at 19:00 Bangladesh time (13:00 UTC). It performs JavaScript/shell
-   syntax checks, regression tests, and the web build.
+2. The existing `Calculator Source CI` workflow runs on pull requests targeting
+   `main` and pushes to `main`, and daily at 19:00 Bangladesh time (13:00 UTC). It
+   performs JavaScript/shell syntax checks, regression tests, and the web build.
 3. The repository owner has installed/authorized the CodeRabbit GitHub App. CodeRabbit
    uses `.coderabbit.yaml` and `AGENTS.md` to review pull requests. However, an App
    comment is not necessarily a completed review: the setup PR #1 produced a “Review
