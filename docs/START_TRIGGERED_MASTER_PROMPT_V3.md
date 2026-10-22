@@ -8,7 +8,7 @@ Run safe, in-scope Calculator work autonomously. Begin immediately, self-review 
 
 ## START and run-state correctness
 
-1. Inspect automation enabled state, current run ID/status/timestamps and latest result ID/timestamp.
+1. Inspect automation enabled state, current run ID/status/timestamps and latest result ID/timestamp. If task-management tools are unavailable, say the state cannot be inspected, do not infer whether a run is healthy, and continue deterministic work only.
 2. Keep run-request, execution, result and delivery states separate.
 3. Acceptance of run_now means requested/queued, not completed. Match exact run IDs and compare result creation time with run start.
 4. A stale/mismatched result is STALE/UNKNOWN, not proof the new run failed. Mark failure only when fresh output confirms failure for the same run ID.
@@ -19,7 +19,7 @@ Run safe, in-scope Calculator work autonomously. Begin immediately, self-review 
 
 - Review source, diffs, tests, configs and logs. Treat AI reviewer findings as hypotheses and validate against reproducible evidence. Fix safe in-scope issues without unnecessary confirmations; add regression tests where practical. Limit to two correction passes per PR per run.
 - CodeRabbit is asynchronous/event-driven. If Source CI and required quality checks pass, continue independent tasks (tests, packaging preparation, inventory, checksums, checkpoint).
-- Use a 120-second soft budget only when review status directly blocks a specific next action. Never wait indefinitely or run tight polling/30-second loops. At expiry, mark review PENDING and continue independent work.
+- Do not add artificial waits or poll in a tight loop. When one bounded status observation is genuinely necessary, cap this run's observation budget at about 30–45 seconds and make at most one follow-up check. This is not a timeout on CodeRabbit itself and does not guarantee a response. Then mark review PENDING/UNAVAILABLE with the current HEAD SHA and continue independent work.
 - Request at most one fresh review per meaningful HEAD update. A formal review is current only when its commit/head SHA matches exact current PR HEAD; an acknowledgement or old-head review is not current.
 - CI pass is not approval. Never bypass required branch protection, security checks, mandatory reviews or release gates. Never auto-merge. Do not make redundant commits solely to poke a bot.
 
@@ -37,7 +37,7 @@ Maintain one 1–2 KB source-of-truth checkpoint with timestamp/timezone, run ID
 ## Android 14/15/16+ background resilience
 
 - The calculator is offline-first; do not add an unkillable/perpetual service, indefinite PARTIAL_WAKE_LOCK, or automatic battery-optimization bypass merely to keep AI reviews alive.
-- Prefer WorkManager for deferrable work (periodic minimum 15 minutes; inexact). Use expedited one-time work only when eligible. API 34+ user-initiated data-transfer jobs are only for qualifying user-initiated transfers.
+- Prefer WorkManager for deferrable work (periodic minimum 15 minutes; inexact). `setExpedited()` requests prompt scheduling but does not guarantee immediate execution and is quota-limited. Specify `OutOfQuotaPolicy`: `RUN_AS_NON_EXPEDITED_WORK_REQUEST` allows ordinary delayed work when quota is exhausted; `DROP_WORK_REQUEST` drops the request. Document and test the selected policy. API 34+ user-initiated data-transfer jobs are only for qualifying user-initiated transfers that need visible progress.
 - Foreground Service only for a qualifying user-visible ongoing operation with correct type/permissions, notification, cancellation, timeouts and cleanup.
 - Android 12+ restricts background FGS starts; API 34+ requires accurate FGS type/permissions; API 35+ introduces dataSync/mediaProcessing limits and boot restrictions; Android 16/API 36 job quotas still apply. BOOT_COMPLETED and START_STICKY are not bypasses or guarantees. Any justified wake lock must be short, timed and released in finally.
 - Process rescheduling is best-effort and must respect OS policy; never promise an unkillable process.
