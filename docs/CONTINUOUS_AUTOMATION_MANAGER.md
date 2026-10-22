@@ -6,7 +6,7 @@ Updated: 2026-10-22 (Asia/Dhaka)
 
 **ChatGPT task continuity** is the enabled daily task. It performs one bounded execution when invoked; it cannot observe messages sent to another chat or keep this conversation permanently alive.
 
-**Repository continuity** is GitHub Actions. The merged workflow `.github/workflows/continuous-quality-loop.yml` runs on main pushes, PR lifecycle events, submitted reviews, inline review comments, manual dispatch, and an hourly UTC schedule. The hourly schedule is best-effort, not a precise clock or daemon.
+**Repository continuity** is GitHub Actions. The workflow `.github/workflows/continuous-quality-loop.yml` runs on: pushes to `main`; pull requests **targeting `main`** with `opened`, `synchronize`, `reopened`, `ready_for_review` or `edited`; submitted `pull_request_review` events; created `pull_request_review_comment` events; manual `workflow_dispatch`; and an hourly UTC schedule (`17 * * * *`). The hourly schedule is best-effort, not a precise clock or daemon.
 
 **AI review continuity** is CodeRabbit's GitHub App. It reacts to eligible GitHub events; it is not a process that should be pinged every minute. CI can prove tests/build checks ran; it cannot prove that CodeRabbit reviewed the latest commit unless a review/response identifies that exact PR head.
 
@@ -18,9 +18,9 @@ Treat **START as an activation command only when it is clearly the user's comman
 
 When the supervising ChatGPT session receives a standalone START:
 
-1. Inspect the current enabled state and latest run of the task named **Calculator Daily Build & Upload**.
-2. If it is disabled and the user has requested activation, enable it before proceeding.
-3. If a run is genuinely active and fresh, do not spawn duplicate runs. If the same run remains `in_progress` for more than 45 minutes with no matching fresh result, classify it as possibly stale, preserve its run ID, and make at most one new immediate-run request for this explicit START. Do not launch a retry loop.
+1. If the task-management tool is available, inspect the enabled state and latest run of **Calculator Daily Build & Upload**. If the tool/action is unavailable, say exactly that task state cannot be inspected from this run; do not infer enabled state, run ID, start or completion.
+2. If its state can be read and it is disabled, enable it only when the user has requested activation and the update action is available. If that action is unavailable, report the blocker and continue deterministic work only.
+3. If a run is confirmed active and fresh, do not spawn duplicates. When the same run remains `in_progress` for more than 45 minutes without a matching result, mark it possibly stale, preserve its run ID and—because this is an explicit START—make at most one recovery request if the action is available. Avoid a tight retry loop.
 4. Use the task's documented immediate-run action (`run_now`) once. “Request accepted” means only that a request was queued; it does not prove the worker finished or delivered anything.
 5. Re-check task state. Accept a result as current only when its run ID matches the run being checked and its creation/completion times fit that run. If the result payload refers to an older run, call the latest run unverified and report the mismatch.
 6. In the current conversation, start useful bounded work immediately as well when execution tools are available. Do not wait passively for the scheduled task or claim the scheduled worker finished before evidence arrives.
@@ -35,7 +35,7 @@ Each active run should repeat this finite cycle until its budget ends, STOP is r
 
 1. **Sync:** read the canonical root instruction and newest dated Project_Control handoff; get live GitHub main/PR heads, CI and review state.
 2. **Select:** choose one highest-impact, independently verifiable task. Keep independent preparation relevant to pending reviews.
-3. **Execute:** make one small logical change on a topic branch; run applicable tests/build/checks.
+3. **Execute, if warranted:** make one small logical change on a topic branch and run applicable tests/build/checks. For verification-only runs or when blocked, do not create unnecessary branches/PRs; record a no-code-change checkpoint and continue any independent useful work.
 4. **Reconcile:** re-fetch the exact current SHA, CI, latest review submissions and unresolved threads. Treat prior-head reviews as stale.
 5. **Checkpoint:** record the compact source of truth, outcome, evidence, blocker and one next action.
 6. Repeat only within the current task/time allowance. Maximum two correction passes per PR per run; never auto-merge.
