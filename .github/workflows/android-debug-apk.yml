@@ -1,6 +1,11 @@
 name: Build Android Debug APK
 
 on:
+  # One-time build start: triggered only when the explicit approval marker is committed.
+  push:
+    branches: [main]
+    paths:
+      - '.github/run-android-apk-build.once'
   workflow_dispatch:
     inputs:
       accept_android_sdk_licenses:
@@ -22,8 +27,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Verify one-time SDK license acknowledgement record
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s .github/run-android-apk-build.once
+          grep -Fx 'SDK_LICENSES_ACCEPTED_FOR_ONE_BUILD=yes' .github/run-android-apk-build.once
+          echo 'SDK_LICENSE_ACKNOWLEDGEMENT=RECORDED_FOR_THIS_BUILD'
+
       - name: Require explicit SDK license acknowledgement
-        if: ${{ inputs.accept_android_sdk_licenses != true }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.accept_android_sdk_licenses != true }}
         shell: bash
         run: |
           echo "::error::Review the Android SDK license terms and re-run with accept_android_sdk_licenses enabled." >&2
