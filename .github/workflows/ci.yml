@@ -26,6 +26,16 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for file in scripts/*.js web/src/*.js; do node --check "$file"; done
+      - name: Validate shell script syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for file in scripts/*.sh; do bash -n "$file"; done
       - name: Run regression tests
         run: npm test
       - name: Build web assets
