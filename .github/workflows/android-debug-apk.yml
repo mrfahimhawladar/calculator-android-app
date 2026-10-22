@@ -32,6 +32,43 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Preflight DNS and HTTPS before tool downloads
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          check_host() {
+            local host="$1" attempt delay
+            for attempt in 1 2 3 4; do
+              if getent ahosts "$host" >/dev/null 2>&1; then
+                echo "[DNS OK] $host (attempt $attempt/4)"
+                return 0
+              fi
+              if [[ "$attempt" -lt 4 ]]; then
+                delay=$((attempt * 2))
+                echo "[DNS RETRY $attempt/3] $host failed; waiting ${delay}s for transient DNS failure." >&2
+                sleep "$delay"
+              fi
+            done
+            echo "::error::DNS remained unavailable for $host after 4 tries. No SDK/package setup was started." >&2
+            exit 3
+          }
+          check_url() {
+            local url="$1"
+            echo "[HTTPS PREFLIGHT] $url"
+            if ! curl --fail --silent --show-error --head --location --retry 2 --retry-all-errors --retry-delay 2 --retry-max-time 15 --connect-timeout 5 --max-time 20 "$url" -o /dev/null; then
+              echo "::error::HTTPS preflight failed for $url. Review the actual network error." >&2
+              exit 3
+            fi
+            echo "[HTTPS OK] $url"
+          }
+          for host in registry.npmjs.org dl.google.com services.gradle.org repo.maven.apache.org maven.google.com github.com release-assets.githubusercontent.com objects.githubusercontent.com nodejs.org; do
+            check_host "$host"
+          done
+          for url in https://registry.npmjs.org/ https://dl.google.com/android/repository/repository2-1.xml https://services.gradle.org/ https://repo.maven.apache.org/maven2/ https://maven.google.com/ https://github.com/ https://nodejs.org/dist/index.json; do
+            check_url "$url"
+          done
+          echo "BUILD_NETWORK_PREFLIGHT=PASS"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -63,7 +100,7 @@ jobs:
           test -x "$SDK_ROOT/platform-tools/adb"
 
       - name: Install JavaScript dependencies
-        run: npm install --no-audit --no-fund
+        run: npm_config_fetch_retries=2 npm_config_fetch_retry_mintimeout=1000 npm_config_fetch_retry_maxtimeout=8000 npm install --no-audit --no-fund
 
       - name: Test, build, and verify APK
         env:
