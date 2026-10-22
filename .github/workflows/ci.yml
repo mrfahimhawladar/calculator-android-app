@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # 19:00 Bangladesh time (UTC+6) = 13:00 UTC.
+    - cron: "0 13 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,6 +19,7 @@ concurrency:
 
 jobs:
   test-and-build:
+    name: Regression tests and web build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
