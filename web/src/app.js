@@ -116,8 +116,9 @@
       if (action === 'memory-clear') { memory = null; save(STORAGE.memory, memory); render(); toast('Memory cleared'); return; }
       if (action === 'memory-recall') { if (memory === null) { toast('Memory is empty'); return; } input = fmt(memory); expression = 'Memory recall'; justEvaluated = true; render(); return; }
       if (input === 'Error') throw new Error('Enter a valid expression');
-      const value = evaluate(input); memory = (memory === null ? 0 : memory) + (action === 'memory-add' ? value : -value);
-      if (!Number.isFinite(memory)) throw new Error('Memory overflow'); save(STORAGE.memory, memory); render(); toast('Memory updated');
+      const value = evaluate(input);
+      memory = Core.updateMemory(memory, value, action === 'memory-add' ? 'add' : 'subtract');
+      save(STORAGE.memory, memory); render(); toast('Memory updated');
     } catch (err) { toast(err.message || 'Memory operation failed'); }
   }
   async function copyResult() {

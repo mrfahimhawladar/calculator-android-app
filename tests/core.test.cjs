@@ -21,3 +21,13 @@ test('enforces factorial bounds', () => { assert.throws(() => Core.factorial(-1)
 test('calculator-style percent handles subtraction with the Unicode minus sign', () => { const expression = Core.applyPercent('200−10', { angleMode: 'DEG' }); assert.equal(expression, '200−20'); assert.equal(Core.evaluate(expression), 180); });
 test('calculator-style percent uses the left base for addition/subtraction only', () => { assert.equal(Core.evaluate(Core.applyPercent('200+10')), 220); assert.equal(Core.evaluate(Core.applyPercent('200×10')), 20); assert.equal(Core.evaluate(Core.applyPercent('200÷10')), 2000); assert.equal(Core.applyPercent('12.5'), '0.125'); assert.equal(Core.applyPercent('−10'), '−0.1'); assert.equal(Core.evaluate(Core.applyPercent('2×−10')), -0.2); });
 test('sign toggle preserves binary subtraction and handles unary signs', () => { assert.equal(Core.toggleTrailingNumberSign('2−3'), '2−−3'); assert.equal(Core.evaluate(Core.toggleTrailingNumberSign('2−3')), 5); assert.equal(Core.evaluate(Core.toggleTrailingNumberSign('2+3')), -1); assert.equal(Core.evaluate(Core.toggleTrailingNumberSign('2×−3')), 6); assert.equal(Core.evaluate(Core.toggleTrailingNumberSign('2−−3')), -1); assert.equal(Core.evaluate(Core.toggleTrailingNumberSign('1e+3')), -1000); assert.equal(Core.toggleTrailingNumberSign('π'), null); });
+
+
+test('memory updates reject overflow without returning invalid values', () => {
+  assert.equal(Core.updateMemory(null, 1e308, 'add'), 1e308);
+  assert.throws(() => Core.updateMemory(1e308, 1e308, 'add'), /Memory overflow/);
+  assert.equal(Core.updateMemory(1e308, 1e308, 'subtract'), 0);
+  assert.equal(Core.updateMemory(null, 12, 'subtract'), -12);
+  assert.throws(() => Core.updateMemory(Infinity, 1, 'add'), /Memory overflow/);
+  assert.throws(() => Core.updateMemory(null, 1, 'invalid'), /Invalid memory operation/);
+});
