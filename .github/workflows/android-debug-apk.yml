@@ -27,15 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Verify one-time SDK license acknowledgement record
-        if: ${{ github.event_name == 'push' }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          test -s .github/run-android-apk-build.once
-          grep -F 'SDK_LICENSES_ACCEPTED_FOR_ONE_BUILD=yes' .github/run-android-apk-build.once
-          echo 'SDK_LICENSE_ACKNOWLEDGEMENT=RECORDED_FOR_THIS_BUILD'
-
       - name: Require explicit SDK license acknowledgement
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.accept_android_sdk_licenses != true }}
         shell: bash
@@ -45,6 +36,15 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Verify one-time SDK license acknowledgement record
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s .github/run-android-apk-build.once
+          grep -F 'SDK_LICENSES_ACCEPTED_FOR_ONE_BUILD=yes' .github/run-android-apk-build.once
+          echo 'SDK_LICENSE_ACKNOWLEDGEMENT=RECORDED_FOR_THIS_BUILD'
 
       - name: Preflight DNS and HTTPS before tool downloads
         shell: bash
