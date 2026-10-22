@@ -1,25 +1,40 @@
-# Calculator Android — Implementation Blocker Report
+# Calculator Android — Native APK Build Report
 
 Updated: 2026-10-22 (Asia/Dhaka)
 Repository: https://github.com/mrfahimhawladar/calculator-android-app
-Latest tested build-diagnosis source revision: https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39758899902
-Manual APK workflow: https://github.com/mrfahimhawladar/calculator-android-app/actions/workflows/android-debug-apk.yml
+Main build commit: 9a5e6d78c1784f9ba8ff82d2fe9c348298fd05b1
 
-## Completed and verified
-- GitHub writes now work; the project source, regression tests, config, helpers and both workflows are committed to main and selected files were fetched back.
-- Source CI passed dependencies, JavaScript syntax checks, shell syntax checks, 18 regression tests, web asset build and output validation.
-- A Doctor logic issue was corrected: system Gradle is not a required executable when the Capacitor-generated Gradle wrapper is the build route; an ungenerated android/ scaffold is now an informational state, not a false blocker.
-- The official Android command-line tools download version/checksum embedded in the SDK bootstrap helper were confirmed against Android Developers' published download table.
-- The APK workflow includes bounded DNS/HTTPS preflight, explicit manual SDK license acknowledgement, actual APK signature/archive/manifest/DEX/app identity checks and a SHA-256 sidecar.
+## Result
+**NATIVE ANDROID DEBUG APK: BUILT AND VERIFIED — PASS**
 
-## Still not complete
-**Native Android APK: NOT BUILT / NOT VERIFIED.** The local sandbox has no Android SDK and DNS resolution fails for required build hosts. The available GitHub integration can commit files and inspect Actions, but does not expose a workflow-dispatch operation in this session. Source CI success is not native APK proof.
+GitHub Actions run: https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832
+Artifact download: https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832/artifacts/12422734751
+Artifact name: Calculator-debug-APK
+Artifact ID: 12422734751
+Artifact ZIP size: 3,705,894 bytes
+Artifact retention expires: 2026-11-05T11:50:34Z
 
-## Direct implementation
-1. Open https://github.com/mrfahimhawladar/calculator-android-app/actions/workflows/android-debug-apk.yml.
-2. Choose **Build Android Debug APK** → **Run workflow** on main.
-3. Personally read and agree to the Android SDK license terms before enabling accept_android_sdk_licenses.
-4. After a successful run, download Calculator-debug-APK and verify app-debug.apk, app-debug.apk.sha256, signature, ZIP integrity, AndroidManifest.xml, classes*.dex, app ID app.calculator.offline and app label Calculator.
+## Actual APK verification evidence
+- Gradle: `BUILD SUCCESSFUL`
+- APK signature: verified by `apksigner` (v1 and v2 schemes valid; one signer)
+- ZIP integrity: PASS
+- `AndroidManifest.xml`: PASS
+- `classes*.dex`: PASS
+- Package ID: `app.calculator.offline` — PASS
+- Application label: `Calculator` — PASS
+- SHA-256: `6486992e9df86b32c06bc9b51003a597d652f7985c66fa517b217bf8fa20bd26`
+- The workflow generated and uploaded a SHA-256 sidecar with the APK.
+
+A first build completed Gradle compilation and signing verification but exposed a typo in the DEX-check regex. That false rejection was fixed and the next build completed all checks and uploaded the artifact successfully.
+
+## Source CI
+Latest source CI results have passed dependency installation, JavaScript syntax, shell syntax, 18 regression tests, web build and generated output validation. Example latest successful CI: https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420894
+
+## Remaining limitations
+- This artifact is a **debug APK for testing/sideloading**, not a release-signed Play Store package.
+- CI has not claimed a physical-device installation or device-specific smoke test.
+- The one-time approval marker used to start the approved build has been removed; the Android workflow has returned to manual `workflow_dispatch` with explicit license-acknowledgement input.
+- Any future build should use GitHub Actions and verify the actual artifact, not rely only on source CI.
 
 ## Security
-No PAT was used or included in project files. Never store PAT/OAuth tokens, passwords or signing keys in source, notebook, logs, or configuration. Revoke any token previously pasted into chat if it remains active.
+No PAT was used or stored in project files. Never put PAT/OAuth tokens, passwords or signing keys in source, notebooks, logs, or configuration.
