@@ -31,9 +31,13 @@ self-merging AI process.
 6. Never auto-merge, suppress a failing check, fabricate a test result, or apply a review
    suggestion that weakens parser safety, offline-first behavior, or secret handling.
 7. If CodeRabbit skips or fails to review a pull request, inspect its status/comment and
-   settings. Try a manual `@coderabbitai review` request on the open PR. If it still
-   skips, report the exact reason and continue deterministic CI checks; do not claim an
-   AI review occurred.
+   settings. Try a manual `@coderabbitai review` request on the open PR.
+   - If CodeRabbit responds “Already reviewed the last commit” without creating a fresh
+     review, request `@coderabbitai full review` as the fallback for the current changeset.
+     A confirmation comment alone is not proof: verify a review submission or actionable
+     finding whose commit SHA matches the current PR HEAD.
+   - If the full review still skips or fails, report the exact reason and continue
+     deterministic CI checks; do not claim an AI review occurred.
 
 ## Parallel work and review polling protocol
 
