@@ -22,7 +22,7 @@ npm run android:build:debug
 
 ## Automated quality checks and AI review
 
-- `.github/workflows/calculator-ci.yml` runs regression tests and the web build for pull requests and pushes to `main`, and daily at 19:00 Bangladesh time (13:00 UTC).
+- The existing `.github/workflows/ci.yml` workflow runs regression tests and builds the web application for pull requests and pushes to `main`; this PR adds a daily run at 19:00 Bangladesh time (13:00 UTC).
 - `.coderabbit.yaml` defines evidence-first AI review instructions for the Calculator project.
 - `AI_REVIEW_FEEDBACK_LOOP.md` documents how an automation run should inspect review comments, verify findings, make bounded fixes, and stop rather than endlessly looping.
 - `AGENTS.md` requires application changes to use a topic branch and pull request, with tests and reviewer feedback checked before merge.
@@ -47,7 +47,7 @@ This is a **debug APK for testing/sideloading**, not a release-signed production
 - `tests/` — regression tests
 - `scripts/` — build, Android diagnostics and SDK bootstrap helpers
 - `.github/workflows/android-debug-apk.yml` — manually dispatched Android build; requires explicit SDK-license acknowledgement
-- `.github/workflows/calculator-ci.yml` — automated regression-test and web-build checks
+- `.github/workflows/ci.yml` — automated syntax checks, regression tests and web-build checks; also scheduled daily
 - `AGENTS.md` — project rules for coding agents
 - `IMPLEMENTATION_BLOCKER_REPORT.md` — build evidence and remaining release-readiness items
 - `AI_REVIEW_FEEDBACK_LOOP.md` — bounded review-and-correction protocol
