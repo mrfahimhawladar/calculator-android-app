@@ -47,3 +47,4 @@ The GitHub Actions workflow requires deliberate manual acknowledgement of Androi
 - Do not add a perpetual service or 24/7 wake lock to this calculator solely to resist process death or keep AI services alive. Android background execution is best-effort and subject to OS/version restrictions.
 - Prefer WorkManager for deferrable jobs. Use a correctly typed Foreground Service only for a real ongoing, user-visible operation, and implement notification, cancellation, timeouts and cleanup.
 - Do not automatically request battery-optimization bypass; never claim `START_STICKY` makes a service unkillable.
+- For the canonical standalone START-triggered master prompt, read `docs/START_TRIGGERED_MASTER_PROMPT_V2.md`; it defines the immediate-run bridge, bounded memory protocol, exact-head CodeRabbit freshness and Android background safety.
