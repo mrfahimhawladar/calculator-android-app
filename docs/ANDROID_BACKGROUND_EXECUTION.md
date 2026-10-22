@@ -17,12 +17,13 @@ Android does not offer a general “unkillable app” permission. `START_STICKY`
 
 Reference: https://developer.android.com/develop/background-work/background-tasks/persistent
 
-## Android 12–15+ restrictions
+## Android 12–16 restrictions
 
 - Apps targeting Android 12/API 31+ generally cannot start a foreground service while already in the background, except for defined exemptions.
 - Apps targeting Android 14/API 34+ must declare the appropriate foreground-service type and corresponding permissions; mismatches can cause a `SecurityException`.
 - Android 15/API 35 imposes a six-hours-in-24-hours limit on `dataSync` foreground services (and separate time accounting for `mediaProcessing`) for apps targeting API 35+. The service must handle `onTimeout` and stop promptly.
-- `BOOT_COMPLETED` does not waive foreground-service restrictions; Android 15 forbids starting certain foreground-service types from a boot receiver.
+- `BOOT_COMPLETED` does not waive foreground-service restrictions. **Apps targeting Android 15/API 35+** cannot start several foreground-service types (including `dataSync`, `mediaPlayback`, `camera`, `phoneCall`, `mediaProjection`, and `microphone`) from a `BOOT_COMPLETED` receiver; the exact restriction depends on target SDK and service type.
+- Android 16/API 36: jobs started while a foreground service is running—including WorkManager, JobScheduler and DownloadManager jobs—still obey their respective runtime quotas regardless of target SDK. A foreground service is not a quota bypass. Checkpoint long tasks, make them resumable/idempotent, and inspect `WorkInfo.getStopReason()` or `JobParameters.getStopReason()` when work is stopped.
 - `START_STICKY` is best-effort restart behavior, not a guarantee of continuous runtime.
 - Only declare the type that accurately describes the real task. Do not choose `specialUse` as a generic loophole.
 
@@ -30,11 +31,12 @@ References:
 - https://developer.android.com/develop/background-work/services/fgs/launch
 - https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
 - https://developer.android.com/develop/background-work/services/fgs/changes
+- https://developer.android.com/topic/performance/power/power-details
 - https://developer.android.com/develop/background-work/services/fgs/timeout
 
 ## Permissions and battery optimization
 
-Request only what the actual feature requires. For a legitimate foreground service this may include `FOREGROUND_SERVICE`, the specific type permission and Android 13+ notification permission handling. Add `WAKE_LOCK` only if a tested, justified operation truly requires it. Do not add `FOREGROUND_SERVICE_DATA_SYNC`, `SPECIAL_USE`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, or `RECEIVE_BOOT_COMPLETED` speculatively.
+Request only what the actual feature requires. For a legitimate foreground service this may include `FOREGROUND_SERVICE`, the specific type permission and Android 13+ notification permission handling. Add `WAKE_LOCK` only if a tested, justified operation truly requires it. Do not add `FOREGROUND_SERVICE_DATA_SYNC`, `FOREGROUND_SERVICE_SPECIAL_USE`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, or `RECEIVE_BOOT_COMPLETED` speculatively. `specialUse` is a service type; the corresponding manifest permission is `FOREGROUND_SERVICE_SPECIAL_USE`, and the service must document its specific use case in a manifest property.
 
 Do **not** auto-open or automatically grant battery-optimization exemptions. An app can open the general battery-optimization settings for the user; direct `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is appropriate only for narrow eligible use cases where Doze/App Standby materially breaks the app's core function and must respect current store policy. A calculator has not established such a need.
 
