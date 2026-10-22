@@ -22,11 +22,11 @@ npm run android:build:debug
 
 ## Automated quality checks and AI review
 
-- The existing `.github/workflows/ci.yml` workflow runs regression tests and builds the web application for pull requests and pushes to `main`; this PR adds a daily run at 19:00 Bangladesh time (13:00 UTC).
+- The existing `.github/workflows/ci.yml` workflow runs syntax checks, regression tests and the web build on pull requests targeting `main` and pushes to `main`, and daily at 19:00 Bangladesh time (13:00 UTC). The scheduled CI run does not inspect CodeRabbit reviews, PR comments or unresolved threads; that follow-up is a separate scheduled/manual task described in `AI_REVIEW_FEEDBACK_LOOP.md`.
 - `.coderabbit.yaml` defines evidence-first AI review instructions for the Calculator project.
-- `AI_REVIEW_FEEDBACK_LOOP.md` documents how an automation run should inspect review comments, verify findings, make bounded fixes, and stop rather than endlessly looping.
+- `AI_REVIEW_FEEDBACK_LOOP.md` documents the parallel-work and bounded review-check protocol: continue useful independent work while waiting, re-check the current PR head SHA and CodeRabbit feedback at checkpoints, fix valid findings on the same branch, run CI, and stop after at most two correction passes. Older reviews do not validate newer commits. The daily CI schedule does not itself wake ChatGPT or inspect CodeRabbit comments.
 - `AGENTS.md` requires application changes to use a topic branch and pull request, with tests and reviewer feedback checked before merge.
-- **Owner action required:** Install/enable the CodeRabbit GitHub App for this public repository. The configuration file alone does not install or activate the app.
+- The repository owner has installed/authorized the CodeRabbit GitHub App. A configuration file alone does not prove that a completed review occurred; verify actual review findings or review submission on an open PR. For forks/new repositories, install the App and grant repository access separately.
 
 ## Verified Android debug APK
 
