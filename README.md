@@ -22,7 +22,7 @@ npm run android:build:debug
 
 ## Automated quality checks and AI review
 
-- The existing `.github/workflows/ci.yml` workflow runs syntax checks, regression tests and the web build on pull requests/pushes, and daily at 19:00 Bangladesh time (13:00 UTC). The scheduled CI run does not inspect CodeRabbit reviews, PR comments or unresolved threads; that follow-up is a separate scheduled/manual task described in `AI_REVIEW_FEEDBACK_LOOP.md`.
+- The existing `.github/workflows/ci.yml` workflow runs syntax checks, regression tests and the web build on pull requests targeting `main` and pushes to `main`, and daily at 19:00 Bangladesh time (13:00 UTC). The scheduled CI run does not inspect CodeRabbit reviews, PR comments or unresolved threads; that follow-up is a separate scheduled/manual task described in `AI_REVIEW_FEEDBACK_LOOP.md`.
 - `.coderabbit.yaml` defines evidence-first AI review instructions for the Calculator project.
 - `AI_REVIEW_FEEDBACK_LOOP.md` documents the parallel-work and bounded review-check protocol: continue useful independent work while waiting, re-check the current PR head SHA and CodeRabbit feedback at checkpoints, fix valid findings on the same branch, run CI, and stop after at most two correction passes. Older reviews do not validate newer commits. The daily CI schedule does not itself wake ChatGPT or inspect CodeRabbit comments.
 - `AGENTS.md` requires application changes to use a topic branch and pull request, with tests and reviewer feedback checked before merge.
