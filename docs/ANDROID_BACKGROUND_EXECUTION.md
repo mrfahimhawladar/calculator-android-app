@@ -21,7 +21,7 @@ Reference: https://developer.android.com/develop/background-work/background-task
 
 - Apps targeting Android 12/API 31+ generally cannot start a foreground service while already in the background, except for defined exemptions.
 - Apps targeting Android 14/API 34+ must declare the appropriate foreground-service type and corresponding permissions; mismatches can cause a `SecurityException`.
-- Android 15/API 35 imposes a six-hours-in-24-hours limit on `dataSync` foreground services (and separate time accounting for `mediaProcessing`) for apps targeting API 35+. The service must handle `onTimeout` and stop promptly.
+- For apps targeting API 35+, Android 15 limits `dataSync` and `mediaProcessing` foreground services to six hours in any 24-hour period while the app is in the background. Each type has separate time accounting. Bringing the app to the foreground resets the timer. The service must handle `onTimeout` and stop promptly when the limit is reached.
 - `BOOT_COMPLETED` does not waive foreground-service restrictions. **Apps targeting Android 15/API 35+** cannot start several foreground-service types (including `dataSync`, `mediaPlayback`, `camera`, `phoneCall`, `mediaProjection`, and `microphone`) from a `BOOT_COMPLETED` receiver; the exact restriction depends on target SDK and service type.
 - Android 16/API 36: jobs started while a foreground service is running—including WorkManager, JobScheduler and DownloadManager jobs—still obey their respective runtime quotas regardless of target SDK. A foreground service is not a quota bypass. Checkpoint long tasks, make them resumable/idempotent, and inspect `WorkInfo.getStopReason()` or `JobParameters.getStopReason()` when work is stopped.
 - `START_STICKY` is best-effort restart behavior, not a guarantee of continuous runtime.
@@ -74,7 +74,7 @@ Reference: https://developer.android.com/develop/background-work/background-task
 
 ## Foreground-service manifest example (conditional, not for the current calculator by default)
 
-Only for real network data sync initiated by the user, after confirming the use case and target SDK:
+Only when WorkManager and a user-initiated data-transfer job are not suitable, and the user-initiated sync meets the `dataSync` foreground-service requirements and time limits:
 
 ```xml
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
