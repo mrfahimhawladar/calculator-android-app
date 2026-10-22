@@ -1,0 +1,48 @@
+language: en-US
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Act as an independent, evidence-first reviewer. Report only actionable defects,
+        security/privacy risks, incorrect behavior, missing regression tests, accessibility
+        problems, compatibility issues, or materially misleading documentation.
+        Do not praise changes or invent speculative problems. For every finding, explain
+        the concrete failure scenario, impact/severity, and the smallest practical fix.
+        If evidence is insufficient, label the uncertainty instead of presenting it as fact.
+        Check the diff against the surrounding code and project requirements in AGENTS.md.
+        Never recommend unsafe evaluation such as eval() or new Function().
+        Preserve the app's offline-first design unless the project owner explicitly approves
+        a change. Treat generated output and old build reports as evidence only when current.
+    - path: "web/**"
+      instructions: |
+        Prioritize expression-parser correctness, arithmetic precedence, parentheses,
+        decimals, unary operators, exponentiation, scientific functions, DEG/RAD,
+        floating-point edge cases, safe parsing, keyboard input, mobile layout,
+        accessible controls, and offline behavior. Never accept eval() or new Function().
+    - path: "tests/**"
+      instructions: |
+        Check that regression tests cover the actual bug and relevant edge cases, fail
+        for the broken behavior, and do not merely assert implementation details.
+    - path: "scripts/**"
+      instructions: |
+        Check shell error handling, quoting, path safety, deterministic build output,
+        platform assumptions, network retries, and that success claims follow real checks.
+    - path: ".github/workflows/**"
+      instructions: |
+        Treat workflow YAML and shell steps as security-sensitive. Check least-privilege
+        permissions, untrusted pull-request handling, secrets exposure, action versions,
+        artifact verification, and whether every success claim is backed by a checked output.
+    - path: "package.json"
+      instructions: |
+        Check dependency and script changes for compatibility, reproducibility, unnecessary
+        packages, risky lifecycle behavior, and missing regression tests.

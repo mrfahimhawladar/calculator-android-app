@@ -20,9 +20,17 @@ npm run android:doctor
 npm run android:build:debug
 ```
 
+## Automated quality checks and AI review
+
+- The existing `.github/workflows/ci.yml` workflow runs regression tests and builds the web application for pull requests and pushes to `main`; this PR adds a daily run at 19:00 Bangladesh time (13:00 UTC).
+- `.coderabbit.yaml` defines evidence-first AI review instructions for the Calculator project.
+- `AI_REVIEW_FEEDBACK_LOOP.md` documents how an automation run should inspect review comments, verify findings, make bounded fixes, and stop rather than endlessly looping.
+- `AGENTS.md` requires application changes to use a topic branch and pull request, with tests and reviewer feedback checked before merge.
+- **Owner action required:** Install/enable the CodeRabbit GitHub App for this public repository. The configuration file alone does not install or activate the app.
+
 ## Verified Android debug APK
 
-**Native Android APK build: SUCCESS.** GitHub Actions run [39773420832](https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832) built the APK, verified its signature and archive, checked manifest/DEX/application ID/label, generated a SHA-256 sidecar and uploaded artifact `Calculator-debug-APK`.
+**Historical verified native Android APK build: SUCCESS.** GitHub Actions run [39773420832](https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832) built the APK, verified its signature and archive, checked manifest/DEX/application ID/label, generated a SHA-256 sidecar and uploaded artifact `Calculator-debug-APK`.
 
 - Application ID: `app.calculator.offline`
 - Label: `Calculator`
@@ -31,7 +39,7 @@ npm run android:build:debug
 - Artifact expires: 2026-11-05
 - [Download build artifact ZIP](https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832/artifacts/12422734751)
 
-This is a **debug APK for testing/sideloading**, not a release-signed production build. Installation and device-specific smoke testing on a physical phone are not claimed by the CI verification.
+This is a **debug APK for testing/sideloading**, not a release-signed production build. Installation and device-specific smoke testing on a physical phone are not claimed by the CI verification. The above build details are historical; check the linked run for current status.
 
 ## Project structure
 
@@ -39,9 +47,11 @@ This is a **debug APK for testing/sideloading**, not a release-signed production
 - `tests/` — regression tests
 - `scripts/` — build, Android diagnostics and SDK bootstrap helpers
 - `.github/workflows/android-debug-apk.yml` — manually dispatched Android build; requires explicit SDK-license acknowledgement
+- `.github/workflows/ci.yml` — automated syntax checks, regression tests and web-build checks; also scheduled daily
 - `AGENTS.md` — project rules for coding agents
 - `IMPLEMENTATION_BLOCKER_REPORT.md` — build evidence and remaining release-readiness items
+- `AI_REVIEW_FEEDBACK_LOOP.md` — bounded review-and-correction protocol
 
 ## Security
 
-Never commit a personal access token (PAT), OAuth token, password, signing key, or secret. Use the authenticated GitHub/Codex integration. Revoke any token pasted into a chat if it has not already been revoked.
+Never commit a personal access token (PAT), OAuth token, password, signing key, or secret. Use authenticated integrations and GitHub Actions secrets where needed. Revoke any token pasted into a chat if it has not already been revoked.
