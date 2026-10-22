@@ -21,7 +21,7 @@ When the supervising ChatGPT session receives a standalone START:
 1. If the task-management tool is available, inspect the enabled state and latest run of **Calculator Daily Build & Upload**. If the tool/action is unavailable, say exactly that task state cannot be inspected from this run; do not infer enabled state, run ID, start or completion.
 2. If its state can be read and it is disabled, enable it only when the user has requested activation and the update action is available. If that action is unavailable, report the blocker and continue deterministic work only.
 3. If a run is confirmed active and fresh, do not spawn duplicates. When the same run remains `in_progress` for more than 45 minutes without a matching result, mark it possibly stale, preserve its run ID and—because this is an explicit START—make at most one recovery request if the action is available. Avoid a tight retry loop.
-4. Use the task's documented immediate-run action (`run_now`) once. “Request accepted” means only that a request was queued; it does not prove the worker finished or delivered anything.
+4. Use the task's documented immediate-run action (`run_now`) only when no healthy fresh run is active. A single recovery request for a stale/failed run counts as that same one request for this explicit START. “Request accepted” means only that a request was queued; it does not prove the worker finished or delivered anything.
 5. Re-check task state. Accept a result as current only when its run ID matches the run being checked and its creation/completion times fit that run. If the result payload refers to an older run, call the latest run unverified and report the mismatch.
 6. In the current conversation, start useful bounded work immediately as well when execution tools are available. Do not wait passively for the scheduled task or claim the scheduled worker finished before evidence arrives.
 
@@ -62,7 +62,7 @@ For every open PR:
 2. Fetch recent Actions status, formal reviews, inline comments and unresolved review threads.
 3. A formal review/approval counts as current only if it refers to the current head. A bot “review triggered” comment, email, previous approval or old diff is not sufficient.
 4. If a substantive head change makes feedback stale, wait for the event-triggered review or request one explicit review on that PR when supported. Do not add repeated hourly comments to CodeRabbit.
-5. Validate findings against the current source/tests. Accepted findings need a minimal code/test fix; false positives should be explained briefly. Run CI after the fix and check that review feedback for the new head is fresh.
+5. Validate findings against the current source/tests. Accepted findings need a minimal code, documentation, or test fix, as applicable; false positives should be explained briefly. Run CI after the fix and check that review feedback for the new head is fresh.
 6. If the bot does not respond, continue deterministic tests and documentation; record “CodeRabbit review pending/unavailable on SHA …”. Do not claim review success.
 
 Hourly quality workflow verifies the main branch; PR/review events verify the affected PR head. Verify an actual scheduled run separately before claiming the hourly heartbeat has fired.
