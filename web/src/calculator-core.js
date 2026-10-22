@@ -57,6 +57,17 @@
     return result;
   }
 
+  function updateMemory(currentMemory, value, operation) {
+    if ((currentMemory !== null && !Number.isFinite(currentMemory)) || !Number.isFinite(value)) {
+      throw new Error('Memory overflow');
+    }
+    if (operation !== 'add' && operation !== 'subtract') throw new Error('Invalid memory operation');
+    const base = currentMemory === null ? 0 : currentMemory;
+    const next = base + (operation === 'add' ? value : -value);
+    if (!Number.isFinite(next)) throw new Error('Memory overflow');
+    return next;
+  }
+
   function evaluate(source, options) {
     const opts = options || {};
     const angleMode = opts.angleMode === 'RAD' ? 'RAD' : 'DEG';
@@ -191,5 +202,5 @@
     return String(Number(value.toPrecision(12)));
   }
 
-  return { tokenize, evaluate, format, factorial, toggleTrailingNumberSign, applyPercent };
+  return { tokenize, evaluate, format, factorial, updateMemory, toggleTrailingNumberSign, applyPercent };
 });
