@@ -1,0 +1,39 @@
+name: Calculator Source CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: calculator-source-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run regression tests
+        run: npm test
+      - name: Build web assets
+        run: npm run build
+      - name: Validate generated output
+        run: |
+          test -s www/index.html
+          test -s www/styles.css
+          test -s www/src/app.js
+          test -s www/src/calculator-core.js
+          echo 'WEB_BUILD_RESULT=PASS'
