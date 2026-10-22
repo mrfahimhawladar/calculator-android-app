@@ -1,27 +1,29 @@
-# Calculator Android — Direct Implementation Report
+# Calculator Android — Implementation Status and Remaining Blocker
 
-Updated: 2026-10-22
+Updated: 2026-10-22 (Asia/Dhaka)
 Repository: https://github.com/mrfahimhawladar/calculator-android-app
-Main branch head at last verification: 008a180d00270b7ce8cd2e79888d52fca046d280
+Main branch: main
 
 ## Verified complete
-- Canonical source is committed under the repository root: README, .gitignore, AGENTS.md, package.json, Capacitor config, web/index.html, app.js, calculator-core.js, styles.css, tests, Android helper scripts, and GitHub workflows.
-- GitHub write access works. The README commit and subsequent source commits are real.
-- Latest Source CI: PASS — https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39755835790
-- Latest CI steps all passed: dependency install, JavaScript syntax checks, shell syntax checks, regression tests, web build, and generated-output validation.
-- Android APK workflow was read back from GitHub; the npm setup cache option was removed because this repository intentionally has no package-lock.json.
-- No PAT is stored in the repository and no PAT was used by these operations.
+- GitHub write operations now succeed. README, project metadata, source, tests, helper scripts, CI and Android build workflow are committed to main.
+- Root repository layout was read back from GitHub and checked; the repository no longer reports empty.
+- Latest verified Source CI for the Android network-preflight workflow revision passed: https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39756688828
+- The Source CI job passed dependency installation, JavaScript syntax checks, shell syntax checks, regression tests, web build and generated-output validation.
+- Regression suite contains 18 tests and the CI run completed successfully.
+- The Android APK workflow now contains bounded DNS and HTTPS preflight before downloading build tools, a manual SDK-license acknowledgement gate, APK verification and artifact upload.
+- No Personal Access Token (PAT) was used or committed. The previously pasted token was not stored in project files.
 
-## One remaining operation
-Native Android APK build has not been run. The APK workflow uses manual workflow_dispatch and a required checkbox for agreement to Android SDK license terms. The available GitHub connector can commit files and inspect workflow runs, but does not expose a workflow-dispatch operation in this session. Local build is also unavailable because Android SDK/Gradle are missing and outbound dependency hosts failed DNS with EAI_AGAIN.
+## Still not complete
+**Native Android APK: NOT BUILT / NOT VERIFIED.** The APK workflow is committed but uses the GitHub Actions `workflow_dispatch` trigger. This session's connected GitHub tools can write repository files and inspect Actions, but do not expose a workflow-dispatch action. The local sandbox also lacks Android SDK/Gradle and DNS resolution is blocked with `EAI_AGAIN` for npm, Android SDK, Gradle, GitHub and Maven hosts.
 
-## Direct action to finish native APK
+## Direct final step
 1. Open https://github.com/mrfahimhawladar/calculator-android-app/actions/workflows/android-debug-apk.yml
-2. Select **Build Android Debug APK** → **Run workflow** on main.
-3. Read and personally agree to the Android SDK license terms, then enable accept_android_sdk_licenses.
-4. When complete, download **Calculator-debug-APK** and verify the app-debug.apk SHA-256 sidecar and workflow verification logs.
+2. Select **Build Android Debug APK** and click **Run workflow** on `main`.
+3. Read and personally agree to the Android SDK license terms; only then enable `accept_android_sdk_licenses`.
+4. After the run succeeds, download `Calculator-debug-APK` and verify the artifact includes `app-debug.apk` and `app-debug.apk.sha256`.
+5. Confirm the run logs verify APK signature, archive integrity, manifest, DEX, package ID `app.calculator.offline`, and label `Calculator`.
 
-Until those steps pass, report the source CI as successful but the native APK as NOT BUILT/NOT VERIFIED.
+Do not claim the native build is done until the actual APK artifact exists and has passed those checks.
 
 ## Security
-Never paste or store a PAT, OAuth token, password or signing key in source, notebooks, build logs, or chat. Revoke any token previously pasted if still active.
+Never paste or store PATs, OAuth tokens, passwords or signing keys in source, notebook, log, or chat. Revoke a previously pasted token if it is still active.
