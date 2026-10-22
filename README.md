@@ -1,6 +1,6 @@
 # Calculator Android — Scientific Calculator
 
-Offline-first dark and lime scientific calculator, prepared for Capacitor Android packaging.
+Offline-first dark and lime scientific calculator, packaged for Android with Capacitor.
 
 - App version: `0.2.3`
 - Android application ID: `app.calculator.offline`
@@ -10,7 +10,7 @@ Offline-first dark and lime scientific calculator, prepared for Capacitor Androi
 
 ## Quick start
 
-Requirements: Node.js 22+, npm. For native Android packaging: JDK 21, Android SDK API 35, Build Tools 35.0.0 and a working Gradle distribution.
+Requirements: Node.js 22+, npm. For native Android packaging: JDK 21, Android SDK API 35, Build Tools 35.0.0 and network access for Gradle/Maven dependencies.
 
 ```sh
 npm install
@@ -20,18 +20,27 @@ npm run android:doctor
 npm run android:build:debug
 ```
 
+## Verified Android debug APK
+
+**Native Android APK build: SUCCESS.** GitHub Actions run [39773420832](https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832) built the APK, verified its signature and archive, checked manifest/DEX/application ID/label, generated a SHA-256 sidecar and uploaded artifact `Calculator-debug-APK`.
+
+- Application ID: `app.calculator.offline`
+- Label: `Calculator`
+- APK SHA-256: `6486992e9df86b32c06bc9b51003a597d652f7985c66fa517b217bf8fa20bd26`
+- GitHub artifact ID: `12422734751`
+- Artifact expires: 2026-11-05
+- [Download build artifact ZIP](https://github.com/mrfahimhawladar/calculator-android-app/actions/runs/39773420832/artifacts/12422734751)
+
+This is a **debug APK for testing/sideloading**, not a release-signed production build. Installation and device-specific smoke testing on a physical phone are not claimed by the CI verification.
+
 ## Project structure
 
 - `web/` — source HTML, CSS and calculator logic
 - `tests/` — regression tests
 - `scripts/` — build, Android diagnostics and SDK bootstrap helpers
-- `.github/workflows/android-debug-apk.yml` — manually dispatched CI build
+- `.github/workflows/android-debug-apk.yml` — manually dispatched Android build; requires explicit SDK-license acknowledgement
 - `AGENTS.md` — project rules for coding agents
-- `IMPLEMENTATION_BLOCKER_REPORT.md` — current known blockers and recovery plan
-
-## Build status
-
-The pure JavaScript tests and web asset build have passed in the prepared workspace (18/18 tests). A **native APK is not yet verified**. The GitHub Actions workflow requires manual approval of Android SDK license terms before the hosted build is dispatched. Do not report a successful APK build until the actual artifact has been uploaded and verified.
+- `IMPLEMENTATION_BLOCKER_REPORT.md` — build evidence and remaining release-readiness items
 
 ## Security
 
