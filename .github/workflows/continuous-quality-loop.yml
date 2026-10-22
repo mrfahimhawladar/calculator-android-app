@@ -1,0 +1,94 @@
+name: Calculator Continuous Quality Loop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+  schedule:
+    # Hourly UTC heartbeat: checks the current main branch even when no PR event occurs.
+    # GitHub scheduled workflows are best-effort and can be delayed; event-driven triggers are primary.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: calculator-continuous-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Test current branch / latest PR head
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout the latest event commit
+        uses: actions/checkout@v4
+        with:
+          # Review/comment events carry the pull_request object; this selects its latest head.
+          # The hourly pulse and main pushes fall back to the event SHA.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        id: install
+        run: npm install --no-audit --no-fund
+
+      - name: Run regression tests
+        id: tests
+        run: npm test
+
+      - name: Build web assets
+        id: web_build
+        run: npm run build
+
+      - name: Verify generated web output
+        id: output_check
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s www/index.html
+          test -s www/styles.css
+          test -s www/src/app.js
+          test -s www/src/calculator-core.js
+          echo "WEB_OUTPUT_CHECK=PASS"
+
+      - name: Publish run report
+        if: always()
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          INSTALL_RESULT: ${{ steps.install.outcome }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          BUILD_RESULT: ${{ steps.web_build.outcome }}
+          OUTPUT_RESULT: ${{ steps.output_check.outcome }}
+        run: |
+          {
+            echo "## Calculator continuous quality loop"
+            echo
+            echo "- Trigger: ${EVENT_NAME}"
+            echo "- Ref: ${REF_NAME}"
+            if [[ -n "${PR_NUMBER}" ]]; then echo "- Pull request: #${PR_NUMBER}"; fi
+            echo "- Tested commit: ${HEAD_SHA}"
+            echo "- Dependency install: ${INSTALL_RESULT:-not reached}"
+            echo "- Regression tests: ${TEST_RESULT:-not reached}"
+            echo "- Web build: ${BUILD_RESULT:-not reached}"
+            echo "- Output checks: ${OUTPUT_RESULT:-not reached}"
+            echo
+            echo "This workflow verifies code and reports results; it does not auto-merge or claim to repair code without an authorized coding agent."
+          } >> "${GITHUB_STEP_SUMMARY}"
