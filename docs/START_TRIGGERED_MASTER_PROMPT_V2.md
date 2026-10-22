@@ -1,4 +1,4 @@
-# START-Triggered Master Prompt v2 — Calculator Automation, Memory & Android Background Safety
+# START-Triggered Master Prompt v3 refinement — Calculator Automation, Memory & Android Background Safety
 
 Updated: 2026-10-22 (Asia/Dhaka)
 
@@ -48,3 +48,38 @@ The calculator is offline-first and has no demonstrated need for a permanent ser
 
 ## End report
 Choose `completed`, `partial`, `blocked`, `pending` or `failed`. Report exact run IDs/timestamps, current main/PR SHA, CI/tests, CodeRabbit status, artifact path/size/hash/integrity, Library state, toolchain/APK state, runner state (`verified`/`not deployed`/`unknown`), exact blocker and one next action. Never claim infinite or unkillable execution without independent deployment/health evidence.
+
+
+## High-priority autonomous execution and anti-stall policy (v3 refinement)
+
+### Immediate execution
+- On a clear standalone `START` or a concrete task request, inspect the live state and begin useful authorized work in the same invocation. Do not ask for minor confirmations or add artificial sleeps.
+- “Zero-delay” means no unnecessary waiting, not guaranteed instantaneous completion. Tool latency, quotas, platform limits, permissions and security gates remain real constraints.
+- Self-review the plan, changed files, test output and final claims. Internal reasoning never substitutes for reproducible tests or required repository checks.
+
+### Non-blocking CodeRabbit / CI
+- Treat CodeRabbit as asynchronous. Never wait indefinitely, sleep-poll continuously, or let review latency block independent source checks, tests, build/package work, checksum verification or checkpointing.
+- Make at most one bounded status recheck near the end of the current run. If still pending, record `PENDING` or `UNAVAILABLE`, current PR HEAD SHA, last checked time and review-request/comment ID when known; continue independent work.
+- A timeout is not approval. CI PASS is not CodeRabbit approval. Do not merge or bypass branch protection, required reviews, security checks or Android SDK license acknowledgement because a timer expired.
+- Request at most one fresh formal review after a meaningful head change. Do not add redundant commits/comments just to wake the bot. Validate feedback against the current HEAD and tests; older-head reviews are stale.
+
+### Run-state integrity
+- Keep run-request acceptance, authoritative run metadata, result payload, recovery decision and user-facing report logically separate.
+- Never mark a new run failed solely because `latest_result` belongs to an older run. Compare exact run IDs and timestamps; preserve conflicting evidence and report `UNKNOWN/INCONSISTENT` if it cannot be reconciled.
+- For an explicit START, allow at most one recovery run when state is demonstrably stale/failed. Do not create retry loops.
+
+### Checksum / inventory loop prevention
+- Rebuild inventory or checksums only after content/HEAD changes, a new artifact, or explicit integrity verification. Cache by commit SHA and relevant content hashes.
+- Compare intended file content before writing; skip no-op writes. Do not regenerate a checksum manifest simply because a check ran. Prevent checksum self-reference by documenting/excluding generated manifests and reports from their own digest inputs.
+- A valid digest proves byte integrity, not correctness. Report actual artifact path, size and SHA-256.
+
+### Bounded memory and honest continuity
+- Keep one compact 1–2 KB checkpoint; chunk and filter logs by run ID, SHA, test or error; archive older notes and redact secrets/PII.
+- ChatGPT context/account-memory limits are platform-controlled; a prompt cannot reset or increase them.
+- A scheduled ChatGPT task is bounded, not a permanent listener. Do not claim a persistent 24/7 agent unless a separately authorized runner, scoped credentials, budget, monitoring, restart policy and STOP control are independently verified.
+
+### Android background execution
+- Use WorkManager for deferrable work (periodic minimum 15 minutes and inexact); use eligible one-time/expedited work for immediate user-initiated jobs within quotas.
+- Use a Foreground Service only for a qualifying, user-visible ongoing operation with correct type/permissions, notification, cancellation, timeout handling and cleanup. A qualifying user-initiated data transfer may use the applicable platform API.
+- Never add an unkillable-service claim, permanent idle `PARTIAL_WAKE_LOCK`, or automatic battery-optimization bypass to keep AI/review services alive. `START_STICKY` and `BOOT_COMPLETED` are not guarantees or policy bypasses.
+- Continue deterministic work when a review is pending; report exact blockers without inventing success.
