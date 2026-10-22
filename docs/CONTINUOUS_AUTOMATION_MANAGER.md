@@ -62,6 +62,8 @@ For every open PR:
 2. Fetch recent Actions status, formal reviews, inline comments and unresolved review threads.
 3. A formal review/approval counts as current only if it refers to the current head. A bot “review triggered” comment, email, previous approval or old diff is not sufficient.
 4. If a substantive head change makes feedback stale, wait for the event-triggered review or request one explicit review on that PR when supported. Do not add repeated hourly comments to CodeRabbit.
+
+   Do not wait indefinitely or poll in a tight loop. If one bounded status observation is necessary, cap it at about 30–45 seconds with at most one follow-up check; this bounds only the current run's observation and does not control CodeRabbit's own processing. If review remains pending on the exact HEAD SHA, record `PENDING/UNAVAILABLE` and continue independent checks. A timeout is not approval.
 5. Validate findings against the current source/tests. Accepted findings need a minimal code, documentation, or test fix, as applicable; false positives should be explained briefly. Run CI after the fix and check that review feedback for the new head is fresh.
 6. If the bot does not respond, continue deterministic tests and documentation; record “CodeRabbit review pending/unavailable on SHA …”. Do not claim review success.
 
