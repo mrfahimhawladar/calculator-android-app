@@ -11,7 +11,7 @@ Android does not offer a general “unkillable app” permission. `START_STICKY`
 ## Select the right API
 
 1. **Deferrable/persistent tasks:** use WorkManager. Its periodic interval is at least 15 minutes, and execution time remains inexact and system-managed. Good for sync/cleanup that may run later.
-2. **Immediate, bounded work:** use an expedited one-time WorkRequest when work must start immediately. For a user-initiated data transfer that needs progress notification, use a user-initiated data-transfer job on API 34+; use regular WorkManager for short, interruptible transfers.
+2. **Immediate, bounded work:** use an expedited one-time WorkRequest when work should start promptly, but `setExpedited()` does not guarantee immediate execution and remains subject to quota. Set `OutOfQuotaPolicy` explicitly: `RUN_AS_NON_EXPEDITED_WORK_REQUEST` falls back to ordinary work that may run later; `DROP_WORK_REQUEST` drops the request when expedited quota is unavailable. Document and test the chosen policy for any implementation. For a user-initiated data transfer that needs progress notification, use a user-initiated data-transfer job on API 34+; use regular WorkManager for short, interruptible transfers.
 3. **Ongoing, user-visible work that should not be interrupted:** use a foreground service only when the task qualifies, started from a legitimate user-visible flow, with an ongoing notification and the correct service type/permissions.
 4. **Long-running AI/code review:** use the GitHub app/workflows or a separately deployed authorized runner. A handset service should not try to keep a chat model, CodeRabbit, or an account's memory “alive”.
 
