@@ -35,7 +35,9 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Validate package metadata
-        run: node -e "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')); console.log('package.json: valid JSON')"
+        shell: bash
+        run: |
+          node -e 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")); console.log("package.json is valid JSON")'
 
       - name: Validate shell script syntax
         shell: bash
