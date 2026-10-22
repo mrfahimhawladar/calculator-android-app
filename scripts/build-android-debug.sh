@@ -19,7 +19,7 @@ SDK_READY=1
 for f in platforms/android-35/android.jar platform-tools/adb build-tools/35.0.0/aapt build-tools/35.0.0/apksigner; do [[ -e "$SDK_ROOT/$f" ]] || SDK_READY=0; done
 if [[ "$SDK_READY" != 1 ]]; then
  if [[ "${CALCULATOR_AUTO_INSTALL_ANDROID_SDK:-1}" == 0 ]]; then fail "Android SDK API 35 / Build Tools 35.0.0 / Platform Tools are incomplete at $SDK_ROOT and auto-install is disabled."; fi
- [[ -n "$SDKMANAGER" || -x "$(command -v sdkmanager 2>/dev/null || true)" ]] || fail 'sdkmanager is missing. Install official Android command-line tools, then rerun; see scripts/bootstrap-android-sdk.sh.'
+ # The bootstrap helper can install the official command-line tools if sdkmanager is absent.
  bash scripts/bootstrap-android-sdk.sh
  SDKMANAGER="$(find_sdkmanager || true)"
 fi
