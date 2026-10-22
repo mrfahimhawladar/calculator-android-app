@@ -37,11 +37,20 @@ self-merging AI process.
 
 ## What this does and does not do
 
-- GitHub Actions supplies event-driven checks; the scheduled task supplies periodic
-  follow-up work. Neither is a continuously thinking ChatGPT session.
+- GitHub Actions supplies event-driven CI checks. The daily schedule runs the existing
+  `Calculator Source CI` workflow only: syntax checks, regression tests, web build, and
+  generated-output validation. It does **not** inspect open pull requests, CodeRabbit
+  review status, review comments, or unresolved threads.
+- The separate scheduled ChatGPT task may perform periodic project/review follow-up when
+  it actually runs. It is not triggered by a CodeRabbit email or review event and is not
+  a real-time watcher; a scheduled CI pass must never be treated as evidence that review
+  comments were inspected. When no dedicated event-triggered review agent is configured,
+  review inspection happens only during the scheduled task run or a manual check.
 - CodeRabbit's review is an external AI review, not a direct message into the currently
-  open ChatGPT conversation. The next automation run must explicitly read and evaluate
-  its comments.
+  open ChatGPT conversation. Every follow-up run must fetch the latest PR head SHA,
+  reviews, comments, and unresolved threads; compare the review evidence to the current
+  head; verify and fix valid findings on the same PR branch; then report the resulting
+  CI status. Do not say this work was done just because CodeRabbit emailed a notification.
 - This loop is deliberately bounded. Automated reviews can be wrong, so owner approval
   remains required before merging.
 
