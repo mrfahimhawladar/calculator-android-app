@@ -1,11 +1,6 @@
 name: Build Android Debug APK
 
 on:
-  # One-time build start: triggered only when the explicit approval marker is committed.
-  push:
-    branches: [main]
-    paths:
-      - '.github/run-android-apk-build.once'
   workflow_dispatch:
     inputs:
       accept_android_sdk_licenses:
