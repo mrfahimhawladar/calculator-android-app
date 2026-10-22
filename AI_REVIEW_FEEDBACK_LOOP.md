@@ -10,9 +10,9 @@ self-merging AI process.
 
 1. Make each code change on a topic branch and open or update a pull request to `main`.
    Do not make normal application-code changes directly on `main`.
-2. The `Calculator CI` workflow runs on pull requests and checks package metadata,
-   shell syntax, regression tests, and the web build. It also runs daily at 19:00
-   Bangladesh time (13:00 UTC).
+2. The existing `Calculator Source CI` workflow runs on pull requests and pushes to
+   `main`. This change adds a daily run at 19:00 Bangladesh time (13:00 UTC) and
+   keeps its existing JavaScript/shell syntax checks, regression tests, and web build.
 3. After the repository owner installs and enables the CodeRabbit GitHub App for this
    public repository, CodeRabbit reviews pull requests using `.coderabbit.yaml` and
    `AGENTS.md`. It can report inline findings and summarize risks.
@@ -41,7 +41,11 @@ self-merging AI process.
 
 1. Install the CodeRabbit GitHub App from https://github.com/marketplace/coderabbitai
    and grant access to `mrfahimhawladar/calculator-android-app`.
-2. Merge the pull request that introduces this setup.
-3. Open a small test pull request and confirm that `Calculator CI` and CodeRabbit both
-   report results. Then verify that the Calculator automation reads the review findings
-   and CI status before making a follow-up change.
+2. Ask CodeRabbit to review the setup PR at
+   https://github.com/mrfahimhawladar/calculator-android-app/pull/1. If no review starts
+   automatically, add a PR comment requesting a review (for example, `@coderabbitai review`).
+3. Read the CodeRabbit comments and confirm that `Calculator Source CI` passes before
+   merging the PR.
+4. Open a small test pull request and confirm that CodeRabbit and CI both report results.
+   Then verify that the Calculator automation reads those review findings and CI status
+   before making a follow-up change.
