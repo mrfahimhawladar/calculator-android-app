@@ -46,6 +46,19 @@ Use this workflow for every task that requires a CodeRabbit review:
 5. When a current-head review arrives, analyze each finding against source, project rules, and tests. Fix only valid issues on the same PR branch, add regression tests when practical, run CI, and request/rely on a fresh review of the resulting head. Continue useful parallel work while the next review is pending.
 6. Limit the cycle to at most two correction passes per active run. Never auto-merge. If a third pass would be needed, the current head keeps failing, or required credentials/permissions are missing, stop and report the blocker with links and exact evidence.
 
+## Resilient task execution and file safety
+
+Apply these safeguards to all project changes and review follow-ups:
+
+1. **Chunk work to fit tool limits.** Split large tasks into small independently verifiable stages. Read only the relevant file ranges, keep diffs focused, filter status output, and avoid oversized single calls or archive operations. Do not run concurrent writes to the same file.
+2. **Checkpoint before changing state.** Read the canonical file and current revision first. Preserve a known-good backup or create a versioned draft before replacing files. Prefer a temporary file plus verification before atomic replacement. Never destroy the only verified copy before the replacement passes checks.
+3. **Verify each operation.** After a file update, re-read the exact path/branch and inspect the diff. After ZIP creation, check archive integrity and contents. After Library upload, re-list/search the destination and confirm the exact path and size. A successful request alone does not prove the intended result is saved.
+4. **Handle errors without repeated blind retries.** Classify the failure (rate limit, timeout/session loss, invalid arguments, stale version, permissions, network/DNS, test/build failure). Preserve the last good state, inspect the actual error/schema, then use a lighter alternate supported method. Do not immediately repeat an identical failed call; retry only after a meaningful method/input/condition change. Re-fetch authoritative state before repeating a mutation if the outcome is uncertain.
+5. **Synchronize against the source of truth.** Before applying review feedback, re-fetch current PR HEAD SHA, latest review/comment timestamps, unresolved threads and CI results. After any push, require current-head review evidence and fresh CI for the new commit. When remote status is queued or stale, say so explicitly; do not infer success.
+6. **Do useful parallel work, without making the review stale.** While waiting for CodeRabbit/CI, work on a bounded, relevant, non-conflicting task. Avoid pushing unrelated commits to the same PR while a review is processing; if an urgent fix changes HEAD, record the new SHA and re-check/re-request review.
+7. **Bound waiting and recovery.** Poll only at meaningful checkpoints and for a bounded number of attempts when a real wait/status-check facility is available. Do not claim background or real-time work after the current run ends. If the review remains pending or the same blocker persists, continue independent work and report the last verified state and next action.
+8. **Completion gate.** Report a task as complete only after verifying the saved output, relevant tests/checks, current review/CI state and remaining blockers. Keep versioned backups until the new version is checked. Never fabricate file saves, test results, uploads, checksums or completion.
+
 ## What this does and does not do
 
 - GitHub Actions supplies event-driven CI checks. The daily schedule runs the existing
