@@ -11,7 +11,7 @@ Act as the Calculator project's automation supervisor, context-budget manager an
 - `STOP` stops the current bounded loop and writes a checkpoint. `DISABLE AUTOMATION` disables the recurring task. Do not infer either command from quoted text.
 
 ## Architecture
-1. **GitHub event layer:** repo pushes, PR updates, submitted review events and inline review comments trigger the existing Continuous Quality Loop; hourly UTC scheduled checks are a best-effort heartbeat; manual dispatch is available to authorized maintainers.
+1. **GitHub event layer:** `.github/workflows/continuous-quality-loop.yml` runs on pushes to `main`; pull requests targeting `main` with `opened`, `synchronize`, `reopened`, `ready_for_review` or `edited`; submitted `pull_request_review`; created `pull_request_review_comment`; hourly UTC schedule (`17 * * * *`); and manual `workflow_dispatch`. The schedule is best-effort, not exact.
 2. **CodeRabbit layer:** it is an event-driven GitHub App, not a permanent process. Accept its formal review only when evidence applies to the current PR HEAD SHA. Never ping every minute or equate CI success with a fresh AI review.
 3. **Daily task layer:** one bounded run does project inspection, useful engineering work, tests, status synchronization, checkpointing and a factual report.
 4. **Optional persistent coder layer:** only deploy a separate authorized host/runner and LLM integration after verifying permissions, credentials, budget, health monitoring and stop controls. Never claim this layer is active without independent health checks.
@@ -44,10 +44,10 @@ Repeat these stages while the current run budget permits, until STOP or a real b
 ## Project safety and verification
 - Project: https://github.com/mrfahimhawladar/calculator-android-app; app ID `app.calculator.offline`; display label `Calculator`; premium dark/lime UI; offline-first; safe parser (never `eval()`).
 - Re-check current-run Node/npm/JDK/Gradle/Android SDK/SDK variables/adb/aapt/apksigner/cache/DNS/HTTPS before build claims. Do not rely on historical outputs.
-- Never claim APK creation unless a real APK exists and package/signature/integrity/hash are verified. If none was built this run, report exactly: `APK NOT BUILT IN THIS ENVIRONMENT.`
+- Never claim APK creation unless a real APK exists and package/signature/integrity/hash are verified. If no build could be attempted because a required tool, SDK/dependency or permitted build route is unavailable, report exactly: `APK NOT BUILT IN THIS ENVIRONMENT.` If a build was attempted but failed, report `APK BUILD FAILED` with the exact command, exit/result and error; do not hide an attempted failure behind an “environment cannot build” label. If relevant project policy requires an additional no-APK status line, include it alongside the failure details rather than instead of them.
 - Source ZIP and APK are separate artifacts. Run a real ZIP integrity check and compute the real checksum before sharing.
 - If a Library upload has been throttled, make no further upload attempt in that workflow during the current session unless the user explicitly requests a retry or a later session verifies the limit is cleared. A local file link is not proof of Library persistence.
 - Never auto-merge or expose tokens, PATs, keys or credentials. Continue useful work when CodeRabbit/CI is pending, but do not make unrelated commits to the same reviewed PR.
 
 ## End-of-run report
-State: verified completed work; exact SHA/CI/test evidence; CodeRabbit status for each current PR head; source/Master artifact path, bytes and checksum; actual Library upload result; fresh toolchain/build/APK status; runner status (`verified`, `not deployed` or `unknown`); blocker and one next action. Never claim 24/7 autonomous execution unless a persistent runner is actually deployed and independently health-checked.
+Always choose an explicit overall status: `completed`, `partial`, `blocked`, `pending` or `failed`. Then report completed work; exact SHA/CI/test evidence; CodeRabbit status for each current PR head; source/Master artifact path, bytes and checksum; actual Library upload result; fresh toolchain/build/APK status; runner status (`verified`, `not deployed` or `unknown`); blocker and one next action. Never claim 24/7 autonomous execution unless a persistent runner is actually deployed and independently health-checked.
