@@ -1,0 +1,25 @@
+{
+  "name": "calculator-offline",
+  "version": "0.2.3",
+  "private": true,
+  "description": "Offline-first dark and lime scientific calculator, ready for Capacitor Android packaging.",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --test tests/*.test.cjs",
+    "android:add": "cap add android",
+    "cap:sync": "npm run build && cap sync android",
+    "android:sync": "npm run cap:sync",
+    "android:open": "cap open android",
+    "android:build:debug": "bash scripts/build-android-debug.sh",
+    "android:doctor": "bash scripts/android-doctor.sh",
+    "android:bootstrap": "bash scripts/bootstrap-android-sdk.sh"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}
