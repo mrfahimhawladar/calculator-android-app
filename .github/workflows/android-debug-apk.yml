@@ -1,0 +1,92 @@
+name: Build Android Debug APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      accept_android_sdk_licenses:
+        description: 'I reviewed and agree to the Android SDK license terms required by this build.'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: calculator-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    name: Test, build, and verify installable debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require explicit SDK license acknowledgement
+        if: ${{ inputs.accept_android_sdk_licenses != true }}
+        shell: bash
+        run: |
+          echo "::error::Review the Android SDK license terms and re-run with accept_android_sdk_licenses enabled." >&2
+          exit 1
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: 'true'
+          log-accepted-android-sdk-licenses: 'true'
+          packages: ''
+
+      - name: Install required Android API and build tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$SDK_ROOT"
+          test -s "$SDK_ROOT/platforms/android-35/android.jar"
+          test -x "$SDK_ROOT/build-tools/35.0.0/apksigner"
+          test -x "$SDK_ROOT/build-tools/35.0.0/aapt"
+          test -x "$SDK_ROOT/platform-tools/adb"
+
+      - name: Install JavaScript dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Test, build, and verify APK
+        env:
+          ANDROID_SDK_ACCEPT_LICENSES: 'yes'
+          CALCULATOR_AUTO_INSTALL_ANDROID_SDK: '0'
+        run: npm run android:build:debug
+
+      - name: Write checksum sidecar
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APK_DIR="android/app/build/outputs/apk/debug"
+          test -s "$APK_DIR/app-debug.apk"
+          (cd "$APK_DIR" && sha256sum app-debug.apk > app-debug.apk.sha256)
+          cat "$APK_DIR/app-debug.apk.sha256"
+
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Calculator-debug-APK
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
