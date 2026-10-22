@@ -35,6 +35,17 @@ self-merging AI process.
    skips, report the exact reason and continue deterministic CI checks; do not claim an
    AI review occurred.
 
+## Parallel work and review polling protocol
+
+Use this workflow for every task that requires a CodeRabbit review:
+
+1. Start the requested change, run available checks, and make sure the PR head SHA is recorded.
+2. Do not sit idle while CodeRabbit is processing. Work on a bounded, relevant parallel item such as inspecting adjacent code for edge cases, preparing a regression test, reviewing build/toolchain blockers, or improving non-conflicting documentation. Keep the pending-review change isolated: do not push extra commits to the same PR branch while a review is running unless necessary, because every new head can make the in-progress or completed review stale.
+3. Check review status at meaningful checkpoints: after the parallel work item, after CI status changes, and immediately before reporting. Re-fetch the latest PR head SHA, review submissions, review comments, unresolved threads, and Actions status each time. Never count a review from an older SHA as current-head evidence.
+4. Prefer an event-triggered GitHub workflow for immediate notification/triage when one is configured. Otherwise, perform bounded checks during the active run; do not busy-poll indefinitely or claim to run a background timer after the turn ends. If the review is still pending, report that explicitly and state the exact last-checked head SHA and status.
+5. When a current-head review arrives, analyze each finding against source, project rules, and tests. Fix only valid issues on the same PR branch, add regression tests when practical, run CI, and request/rely on a fresh review of the resulting head. Continue useful parallel work while the next review is pending.
+6. Limit the cycle to at most two correction passes per active run. Never auto-merge. If a third pass would be needed, the current head keeps failing, or required credentials/permissions are missing, stop and report the blocker with links and exact evidence.
+
 ## What this does and does not do
 
 - GitHub Actions supplies event-driven CI checks. The daily schedule runs the existing
