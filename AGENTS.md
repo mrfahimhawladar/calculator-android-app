@@ -17,7 +17,7 @@
 2. `npm run build`
 3. `npm run android:doctor` when changing build or Android setup
 4. For a claimed APK: run `npm run android:build:debug` and verify app ID `app.calculator.offline`, label `Calculator`, signature, ZIP structure, manifest, DEX and SHA-256.
-5. For changes submitted in a pull request, verify that the `Calculator CI` workflow completed successfully; check CodeRabbit feedback when the GitHub App is installed.
+5. For changes submitted in a pull request, verify that the `Calculator Source CI` workflow completed successfully; check CodeRabbit feedback when the GitHub App is installed.
 
 ## Android SDK license gate
 The GitHub Actions workflow requires deliberate manual acknowledgement of Android SDK license terms. Do not bypass or silently approve this step. Enable the acknowledgement only after the operator reviews and agrees to the terms.
