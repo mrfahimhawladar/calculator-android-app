@@ -33,7 +33,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           test -s .github/run-android-apk-build.once
-          grep -Fx 'SDK_LICENSES_ACCEPTED_FOR_ONE_BUILD=yes' .github/run-android-apk-build.once
+          if ! grep -Fx 'SDK_LICENSES_ACCEPTED_FOR_ONE_BUILD=yes' .github/run-android-apk-build.once \
+             && ! grep -Fx '"SDK_LICENSES_ACCEPTED_FOR_ONE_BUILD=yes"' .github/run-android-apk-build.once; then
+            echo "::error::One-time SDK license approval marker is missing or malformed." >&2
+            exit 1
+          fi
           echo 'SDK_LICENSE_ACKNOWLEDGEMENT=RECORDED_FOR_THIS_BUILD'
 
       - name: Require explicit SDK license acknowledgement
