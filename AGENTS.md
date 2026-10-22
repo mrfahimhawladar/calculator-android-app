@@ -27,3 +27,10 @@ The GitHub Actions workflow requires deliberate manual acknowledgement of Androi
 - Every accepted finding should be tied to a file/line, impact, and a regression test or direct verification when practical.
 - Never weaken parser safety, offline-first operation, accessibility, or secret-handling rules to silence a reviewer.
 - If the AI reviewer is unavailable, say so; deterministic tests must still run and their actual results must be reported.
+
+## Continuous-operation request handling — attempt first, don't stop at the limitation
+- A request for "24/7", "always on", or continuous work must not be directly declined merely because this chat/task invocation is bounded. First inspect available repo workflows, event triggers, credentials/permissions, and deployment options; then implement the strongest authorized, verifiable option in the current run.
+- Prefer layered continuity: (1) event-triggered GitHub Actions on push/PR/review events, (2) a modest scheduled health pulse, (3) a separately deployed persistent runner only when an authorized host/service and required secrets are configured.
+- The `Calculator Continuous Quality Loop` workflow is the first hosted layer. Validate its YAML and logic locally, open a topic branch/PR, and verify Actions results when the platform reports them.
+- If a true always-running coding agent requires a missing API key, runner, billing approval, or write permission, do not invent it and do not stop at saying it is impossible. Finish the deterministic workflow and tests, prepare the exact setup steps, continue all independent useful work, and identify only the exact remaining prerequisite.
+- Clearly distinguish event-driven/hourly automation from a continuously running process. Never claim fixes are being authored between workflow runs unless a real coding agent/runner has been deployed and independently checked.
