@@ -40,7 +40,7 @@ The GitHub Actions workflow requires deliberate manual acknowledgement of Androi
 - Treat `START` as an activation only when it is the user's clear command, not when quoted. The supervising ChatGPT session must bridge it to the enabled `Calculator Daily Build & Upload` immediate-run action when that tool is available; the scheduled task cannot observe arbitrary chat messages by itself.
 - An accepted run-now request is not proof of completion. Match the exact run ID and current result timestamp before reporting delivery. Avoid duplicate runs; if the same run is stale for more than 45 minutes, preserve its state and permit at most one explicit recovery request for a new START.
 - Use compact checkpoints, chunk/filter large logs, keep one current source-of-truth note, and archive older detailed logs. Do not claim a prompt can reset ChatGPT's internal context or account-memory limit.
-- CodeRabbit approval/findings are current only for the exact current PR head SHA. Keep event-driven/houly checks bounded; do not spam repeated review requests or auto-merge.
+- CodeRabbit approval/findings are current only for the exact current PR head SHA. Keep event-driven/hourly checks bounded; do not spam repeated review requests or auto-merge.
 
 ## Android background execution
 - Read `docs/ANDROID_BACKGROUND_EXECUTION.md` before adding background services, boot receivers, wake locks, or battery-exemption requests.
