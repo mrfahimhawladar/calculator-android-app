@@ -68,14 +68,13 @@ AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
 unzip -t "$APK" >/dev/null
 ENTRIES="$(unzip -Z1 "$APK")"
 grep -Fx 'AndroidManifest.xml' <<<"$ENTRIES" >/dev/null || fail 'APK has no AndroidManifest.xml.'
-grep -E '^classes([0-9]+)?\.dex <<<"$ENTRIES" >/dev/null || fail 'APK has no classes*.dex.'
+grep -E '^classes([0-9]+)?[.]dex$' <<<"$ENTRIES" >/dev/null || fail 'APK has no classes*.dex.'
 BADGING="$("$AAPT" dump badging "$APK")"
 [[ "$BADGING" == *"package: name='app.calculator.offline'"* ]] || fail 'APK package ID mismatch.'
 [[ "$BADGING" == *"application-label:'Calculator'"* ]] || fail 'APK app label mismatch.'
 sha256sum "$APK"
 ls -lh "$APK"
 printf '\nAPK_BUILD_RESULT=SUCCESS\nAPK_TYPE=DEBUG_TESTING_SIDELOAD_ONLY\nAPK_PACKAGE_ID=app.calculator.offline\nAPK_LABEL=Calculator\nAPK_ARCHIVE_INTEGRITY=PASS\nAPK_ANDROID_MANIFEST=PASS\nAPK_CLASSES_DEX=PASS\nAPK_PACKAGE_AND_LABEL=PASS\nAPK_SIGNATURE_VERIFICATION=PASS\nAPK_PATH=%s\n' "$APK"
- <<<"$ENTRIES" >/dev/null || fail 'APK has no classes*.dex.'
 BADGING="$("$AAPT" dump badging "$APK")"
 [[ "$BADGING" == *"package: name='app.calculator.offline'"* ]] || fail 'APK package ID mismatch.'
 [[ "$BADGING" == *"application-label:'Calculator'"* ]] || fail 'APK app label mismatch.'
