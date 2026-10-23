@@ -29,7 +29,11 @@ When the supervising ChatGPT session receives a standalone START:
 
 A ChatGPT task itself cannot subscribe to arbitrary user messages. The assistant receiving START must perform the documented run-now bridge. A prompt cannot grant itself new tool access or start itself from inside an inactive chat.
 
-## 3. Bounded loop instead of a hot infinite loop
+### Scheduler next-run metadata
+
+After a schedule change, re-read `is_enabled`, `schedule`, `timing_mode`, and `default_timezone`. If `next_run_time` remains `null`, do not assume the recurrence is absent solely from that field; do not repeatedly rewrite the schedule or create duplicate tasks to force a timestamp. Record `SCHEDULE_STORED / NEXT-RUN-METADATA-UNRESOLVED`, then verify via the task's user-facing schedule or the next actual scheduled execution. Claim a scheduler failure only when a scheduled window passes without a run or the platform reports an explicit scheduling error.
+
+## 3. Continuous project loop across bounded invocations
 
 Each active run should repeat this finite cycle until its budget ends, STOP is received, or a real blocker occurs:
 
@@ -38,9 +42,9 @@ Each active run should repeat this finite cycle until its budget ends, STOP is r
 3. **Execute, if warranted:** make one small logical change on a topic branch and run applicable tests/build/checks. For verification-only runs or when blocked, do not create unnecessary branches/PRs; record a no-code-change checkpoint and continue any independent useful work.
 4. **Reconcile:** re-fetch the exact current SHA, CI, latest review submissions and unresolved threads. Treat prior-head reviews as stale.
 5. **Checkpoint:** record the compact source of truth, outcome, evidence, blocker and one next action.
-6. Repeat only within the current task/time allowance. Maximum two correction passes per PR per run; never auto-merge.
+6. Repeat while this invocation has runtime and budget. When it ends, checkpoint the exact unfinished state and resume on the next eligible scheduled/event-triggered invocation. Continue across invocations until the project goal is met, STOP is requested, or a real security/human gate blocks it. Maximum two correction passes per PR per invocation; never auto-merge.
 
-Do not create a tight loop of bot comments, repeated API polling, repeated failed builds, or repeated uploads. Use the existing hourly workflow as the background heartbeat and event-driven triggers for fast response.
+Do not create a tight loop of bot comments, repeated API polling, repeated failed builds, or repeated uploads. Use event-driven triggers and the existing hourly workflow for continuity. Do not impose an arbitrary 30–45 second cutoff on CodeRabbit observation solely to finish a report; use non-aggressive backoff/status events while runtime permits, then checkpoint and resume if the platform ends the invocation.
 
 ## 4. Memory and context budget
 
@@ -63,7 +67,7 @@ For every open PR:
 3. A formal review/approval counts as current only if it refers to the current head. A bot “review triggered” comment, email, previous approval or old diff is not sufficient.
 4. If a substantive head change makes feedback stale, wait for the event-triggered review or request one explicit review on that PR when supported. Do not add repeated hourly comments to CodeRabbit.
 
-   Do not wait indefinitely or poll in a tight loop. If one bounded status observation is necessary, cap it at about 30–45 seconds with at most one follow-up check; this bounds only the current run's observation and does not control CodeRabbit's own processing. If review remains pending on the exact HEAD SHA, record `PENDING/UNAVAILABLE` and continue independent checks. A timeout is not approval.
+   Do not poll aggressively or spam review requests. Observe event/status changes with non-aggressive backoff while the invocation is alive, without an arbitrary 30–45 second cutoff. If the runtime ends while review is pending on the exact HEAD SHA, record `PENDING/UNAVAILABLE`, continue independent checks, and resume from the checkpoint on the next event/scheduled run. A trigger acknowledgment or timeout is not approval.
 5. Validate findings against the current source/tests. Accepted findings need a minimal code, documentation, or test fix, as applicable; false positives should be explained briefly. Run CI after the fix and check that review feedback for the new head is fresh.
 6. If the bot does not respond, continue deterministic tests and documentation; record “CodeRabbit review pending/unavailable on SHA …”. Do not claim review success.
 
