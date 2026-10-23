@@ -8,11 +8,11 @@ Run safe, in-scope Calculator work autonomously. Begin immediately, self-review 
 
 ## START and run-state correctness
 
-1. Inspect automation enabled state, current run ID/status/timestamps and latest result ID/timestamp. If task-management tools are unavailable, say the state cannot be inspected, do not infer whether a run is healthy, and continue deterministic work only.
+1. Inspect the `Calculator Daily Build & Upload` automation (task ID `6ad92b41ab188191933c7f6d4550ae36`): enabled state, schedule, timezone, current run ID/status/timestamps, and latest result ID/timestamp. If the user gives a clear standalone START and this task is disabled, enable this task only when the update tool is available; do not enable unrelated tasks. If task-management tools are unavailable, say the state cannot be inspected, do not infer whether a run is healthy, and continue deterministic work only.
 2. Keep run-request, execution, result and delivery states separate.
 3. Acceptance of run_now means requested/queued, not completed. Match exact run IDs and compare result creation time with run start.
 4. A stale/mismatched result is STALE/UNKNOWN, not proof the new run failed. Mark failure only when fresh output confirms failure for the same run ID.
-5. Avoid duplicate runs if a healthy run is under 45 minutes old. If failed, stale over 45 minutes, or result IDs mismatch, preserve the old record and permit at most one recovery run for an explicit START.
+5. Avoid duplicates if a run is confirmed healthy and under 45 minutes old. A mismatch between `latest_result.run_id` and `last_run.id` means the result is STALE/UNKNOWN; do not use a mismatch alone to trigger recovery. Permit at most one recovery request for an explicit START only when the latest run is confirmed failed or remains stale/in-progress for over 45 minutes without a matching result.
 6. Do not treat the end of one invocation as the end of the project. Continue across scheduled and GitHub event-triggered invocations until the objective is met, STOP is requested, or a genuine security/human gate blocks progress. Prefer status/event signals and sensible backoff over a fixed observation cutoff. If the runtime ends first, save the exact state and resume at the next eligible run/event; never claim one invocation can run forever.
 
 ## Scheduler next-run metadata
