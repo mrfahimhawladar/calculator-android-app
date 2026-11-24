@@ -21,10 +21,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -65,6 +65,7 @@ private data class KeySpec(
 
 private enum class KeyKind { Number, Utility, Operator, Accent, Scientific }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculatorApp() {
     var expression by rememberSaveable { mutableStateOf("0") }
