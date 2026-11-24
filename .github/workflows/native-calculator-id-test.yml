@@ -56,7 +56,7 @@ jobs:
           APK="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
           unzip -t "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='Calculator'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.calculator'"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           sha256sum "$APK"
 
