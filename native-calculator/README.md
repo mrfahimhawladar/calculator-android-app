@@ -3,15 +3,16 @@
 Native Kotlin + Jetpack Compose calculator.
 
 - App label: `Calculator`
-- Requested Android application ID trial: `Calculator` (kept exactly as requested for the build test)
+- Application ID: `com.calculator` (changed after Gradle rejected the bare identifier `Calculator`)
 - Namespace: `app.calculator.offline`
 - AGP: `9.3.1`
 - Gradle CI: `9.6.0`
 - Kotlin Compose plugin: `2.4.21`
-- Compile SDK: 37
+- Compose BOM: `2025.12.00`
+- Compile SDK: 36
 - Min SDK: 26
 - Target SDK: 36
 
-The application ID is intentionally not changed in this test branch. The CI workflow is authorized to accept the Android SDK license terms for this Calculator build. If the Android Gradle Plugin rejects the ID, the workflow log will preserve the exact error before any alternate ID is chosen.
+The old Android Developer Console entry displayed as `Calculator`; this is not a valid Android application ID. Register `com.calculator` in the Android Developer Console using the same signing certificate before distribution. Keep the verified signing key unchanged.
 
 Build task: `:app:testDebugUnitTest :app:assembleDebug`
