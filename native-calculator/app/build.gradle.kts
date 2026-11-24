@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "app.calculator.offline"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "Calculator"
