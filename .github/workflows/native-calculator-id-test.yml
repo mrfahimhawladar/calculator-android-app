@@ -34,14 +34,12 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
-      - name: Set up Android SDK tools without removed legacy packages
+      - name: Set up Android SDK (accept license terms)
         uses: android-actions/setup-android@v3
         with:
           packages: ''
-
-      - name: Accept Android SDK licenses (user authorized for this Calculator build)
-        shell: bash
-        run: yes | sdkmanager --licenses
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
 
       - name: Install Android API 37 and Build Tools 36
         run: sdkmanager "platforms;android-37" "build-tools;36.0.0" "platform-tools"
