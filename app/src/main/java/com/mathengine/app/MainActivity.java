@@ -26,3 +26,5 @@ private void currency(){LinearLayout b=form(new String[]{"Amount","From currency
 private void show(String t,String s){new AlertDialog.Builder(this).setTitle(t).setMessage(s).setPositiveButton("OK",null).show();}private String fmt(double x){return new java.text.DecimalFormat("#,##0.####").format(x);}
 }
 // Native port maintained independently of Xiaomi/MIUI runtime libraries.
+
+// APK publication occurs before emulator smoke verification.
