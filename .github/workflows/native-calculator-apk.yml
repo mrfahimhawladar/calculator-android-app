@@ -1,0 +1,148 @@
+name: Build Native Calculator APK
+
+on:
+  push:
+    branches:
+      - "build/native-calculator-apk-2026-11-27"
+      - "redesign/native-calculator-2026-11-27"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-calculator-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build native Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Set up Android SDK and accept SDK licences
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: "true"
+          log-accepted-android-sdk-licenses: "true"
+          packages: ""
+
+      - name: Install Android API 35 and Build Tools 35
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          test -s "$ANDROID_SDK_ROOT/platforms/android-35/android.jar"
+          test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
+          test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
+
+      - name: Reassemble and verify native source archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/native-project"
+          git fetch --no-tags origin build/native-calculator-apk-2026-11-27
+          for part in 01 02 03 04; do
+            git show "origin/build/native-calculator-apk-2026-11-27:build-input/source-parts/${part}.b64"
+          done | base64 --decode > "$RUNNER_TEMP/native-source.zip"
+          python3 - "$RUNNER_TEMP/native-source.zip" "$RUNNER_TEMP/native-project" <<'PY'
+          import sys
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          archive = Path(sys.argv[1])
+          destination = Path(sys.argv[2])
+          with ZipFile(archive) as source:
+              verified = 0
+              skipped = []
+              for item in source.infolist():
+                  name = item.filename
+                  if Path(name).name == ".gitignore":
+                      skipped.append(name)
+                      continue
+                  payload = source.read(item)  # verifies the ZIP CRC for every retained entry
+                  target = destination / name
+                  if item.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(payload)
+                  verified += 1
+          print(f"ZIP_ENTRIES_CRC_VERIFIED={verified}")
+          print(f"NON_BUILD_FILE_ENTRIES_SKIPPED={skipped}")
+          PY
+          test -s "$RUNNER_TEMP/native-project/native-android/settings.gradle"
+          test -s "$RUNNER_TEMP/native-project/native-android/build.gradle"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/build.gradle"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/AndroidManifest.xml"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/MainActivity.java"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java"
+          test -s "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
+          cat build-input/redesign-patch/*.b64 | base64 --decode | gzip --decompress > "$RUNNER_TEMP/redesign.patch"
+          patch --batch --forward -p1 -d "$RUNNER_TEMP/native-project" < "$RUNNER_TEMP/redesign.patch"
+
+      - name: Fetch pinned Inter font and OFL licence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FONT_DIR="$RUNNER_TEMP/native-project/native-android/app/src/main/assets/fonts"
+          mkdir -p "$FONT_DIR"
+          INTER_REVISION="9710da1eacb3be272583c3224dcb70f9da6eadbb"
+          INTER_BASE="https://raw.githubusercontent.com/google/fonts/${INTER_REVISION}/ofl/inter"
+          curl -fL --retry 3 "$INTER_BASE/Inter%5Bopsz%2Cwght%5D.ttf" -o "$FONT_DIR/inter-variable.ttf"
+          curl -fL --retry 3 "$INTER_BASE/OFL.txt" -o "$FONT_DIR/OFL.txt"
+          test -s "$FONT_DIR/inter-variable.ttf"
+          test -s "$FONT_DIR/OFL.txt"
+      - name: Run Calculator Engine smoke tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/engine-tests"
+          javac -Xlint:all -d "$RUNNER_TEMP/engine-tests" \
+            "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java" \
+            "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
+          java -cp "$RUNNER_TEMP/engine-tests" com.mathengine.CalculatorEngineSmoke
+
+      - name: Build APK and run Android lint
+        working-directory: ${{ runner.temp }}/native-project/native-android
+        run: gradle --no-daemon --stacktrace clean lintDebug assembleDebug
+
+      - name: Verify APK structure, signature and application ID
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APK="$RUNNER_TEMP/native-project/native-android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          unzip -t "$APK" >/dev/null
+          ENTRIES="$(unzip -Z1 "$APK")"
+          grep -Fx "AndroidManifest.xml" <<<"$ENTRIES" >/dev/null
+          grep -E '^classes([0-9]+)?[.]dex$' <<<"$ENTRIES" >/dev/null
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mathengine'" >/dev/null
+          mkdir -p artifacts
+          cp "$APK" artifacts/Calculator-debug.apk
+          (cd artifacts && sha256sum Calculator-debug.apk > Calculator-debug.apk.sha256)
+          stat -c 'APK_SIZE_BYTES=%s' artifacts/Calculator-debug.apk
+          cat artifacts/Calculator-debug.apk.sha256
+          echo "NATIVE_ANDROID_APK_RESULT=PASS"
+
+      - name: Upload APK and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: Calculator-Native-Debug-APK
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
