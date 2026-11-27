@@ -1,0 +1,49 @@
+name: Recover Xiaomi Mi Calculator reference APK
+
+on:
+  push:
+    branches:
+      - recover/mi-calculator-17.4.1
+    paths:
+      - .github/workflows/recover-mi-calculator.yml
+
+permissions:
+  contents: read
+
+jobs:
+  download-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download APKMirror reference APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://www.apkmirror.com/wp-content/themes/APKMirror/download.php?id=17037150&key=79af0edac973ecdb230fbc0f0cec7d0d90bf6098'
+          PAGE='https://www.apkmirror.com/apk/xiaomi-inc/miui-calculator/mi-calculator-17-4-1-release/mi-calculator-17-4-1-android-apk-download/'
+          curl --fail --location --show-error --silent \
+            --retry 3 --retry-all-errors --connect-timeout 30 --max-time 240 \
+            --user-agent 'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36' \
+            --referer "$PAGE" \
+            "$URL" \
+            --output Mi-Calculator-17.4.1.apk
+          test -s Mi-Calculator-17.4.1.apk
+          echo "Downloaded bytes: $(stat -c %s Mi-Calculator-17.4.1.apk)"
+          file Mi-Calculator-17.4.1.apk
+          if file Mi-Calculator-17.4.1.apk | grep -qi 'HTML'; then
+            echo 'APKMirror returned an HTML page, not an APK.' >&2
+            head -c 500 Mi-Calculator-17.4.1.apk >&2
+            exit 1
+          fi
+          unzip -t Mi-Calculator-17.4.1.apk
+          sha256sum Mi-Calculator-17.4.1.apk | tee Mi-Calculator-17.4.1.apk.sha256
+
+      - name: Upload recovered reference APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mi-Calculator-17.4.1-Reference-APK
+          path: |
+            Mi-Calculator-17.4.1.apk
+            Mi-Calculator-17.4.1.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
