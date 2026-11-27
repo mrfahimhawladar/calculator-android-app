@@ -31,6 +31,8 @@ jobs:
 
       - name: Install Android SDK command-line tools
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android SDK packages
         run: |
@@ -44,13 +46,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "JAVA:"
           java -version
-          echo "GRADLE:"
           gradle --version
-          echo "ANDROID SDK:"
           sdkmanager --list_installed
-          echo "BUILD TOOLS:"
           test -x "$ANDROID_HOME/build-tools/35.0.0/aapt2"
           test -x "$ANDROID_HOME/build-tools/35.0.0/d8"
           test -x "$ANDROID_HOME/build-tools/35.0.0/apksigner"
