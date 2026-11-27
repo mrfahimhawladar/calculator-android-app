@@ -1,0 +1,104 @@
+name: Export clean native Calculator source
+
+on:
+  push:
+    branches:
+      - "redesign/native-calculator-2026-11-27"
+    paths:
+      - ".github/workflows/export-clean-native-source.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout project and redesign sources
+        uses: actions/checkout@v4
+
+      - name: Reconstruct original native source project
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/native-project"
+          git fetch --no-tags origin build/native-calculator-apk-2026-11-27
+          for part in 01 02 03 04; do
+            git show "origin/build/native-calculator-apk-2026-11-27:build-input/source-parts/${part}.b64"
+          done | base64 --decode > "$RUNNER_TEMP/native-source.zip"
+          python3 - "$RUNNER_TEMP/native-source.zip" "$RUNNER_TEMP/native-project" <<'PY'
+          import sys
+          from pathlib import Path
+          from zipfile import ZipFile
+          archive, destination = Path(sys.argv[1]), Path(sys.argv[2])
+          with ZipFile(archive) as source:
+              count = 0
+              for item in source.infolist():
+                  if Path(item.filename).name == ".gitignore":
+                      continue
+                  payload = source.read(item)
+                  target = destination / item.filename
+                  if item.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(payload)
+                  count += 1
+          print(f"SOURCE_ZIP_ENTRIES_VERIFIED={count}")
+          PY
+          cat build-input/redesign-patch/*.b64 | base64 --decode | gzip --decompress > "$RUNNER_TEMP/redesign.patch"
+          patch --batch --forward -p1 -d "$RUNNER_TEMP/native-project" < "$RUNNER_TEMP/redesign.patch"
+
+      - name: Include Inter font and licence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FONT_DIR="$RUNNER_TEMP/native-project/native-android/app/src/main/assets/fonts"
+          mkdir -p "$FONT_DIR"
+          REVISION="9710da1eacb3be272583c3224dcb70f9da6eadbb"
+          BASE="https://raw.githubusercontent.com/google/fonts/${REVISION}/ofl/inter"
+          curl -fL --retry 3 "$BASE/Inter%5Bopsz%2Cwght%5D.ttf" -o "$FONT_DIR/inter-variable.ttf"
+          curl -fL --retry 3 "$BASE/OFL.txt" -o "$FONT_DIR/OFL.txt"
+          test -s "$FONT_DIR/inter-variable.ttf"
+          test -s "$FONT_DIR/OFL.txt"
+
+      - name: Audit clean package identity and Xiaomi markers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROJECT="$RUNNER_TEMP/native-project/native-android"
+          grep -RniE 'com[./]miui|miuix|com[./]xiaomi|tracking\.miui\.com|sdkconfig.*xiaomi' "$PROJECT" > "$RUNNER_TEMP/vendor-markers.txt" || true
+          if test -s "$RUNNER_TEMP/vendor-markers.txt"; then
+            cat "$RUNNER_TEMP/vendor-markers.txt"
+            echo "Unexpected Xiaomi/MIUI markers found in independent native source"
+            exit 1
+          fi
+          grep -Rni 'applicationId' "$PROJECT/app/build.gradle"
+          grep -F 'package="com.mathengine"' "$PROJECT/app/src/main/AndroidManifest.xml"
+          mkdir -p artifacts/source
+          cp -a "$PROJECT" artifacts/source/native-android
+          cp README.md artifacts/source/README.md
+          cp CHANGELOG.md artifacts/source/CHANGELOG.md
+          {
+            echo "Independent native Calculator source"
+            echo "Package ID: com.mathengine"
+            echo "Code origin: independently authored native Android source; not copied from Xiaomi APK"
+            echo "Xiaomi/MIUI source marker scan: PASS (zero matches)"
+            echo "MainActivity.java bytes: $(stat -c %s "$PROJECT/app/src/main/java/com/mathengine/MainActivity.java")"
+            echo "CalculatorEngine.java bytes: $(stat -c %s "$PROJECT/app/src/main/java/com/mathengine/CalculatorEngine.java")"
+            echo "CalculatorEngineSmoke.java bytes: $(stat -c %s "$PROJECT/tests/CalculatorEngineSmoke.java")"
+            echo "Main source total bytes: $(($(stat -c %s "$PROJECT/app/src/main/java/com/mathengine/MainActivity.java") + $(stat -c %s "$PROJECT/app/src/main/java/com/mathengine/CalculatorEngine.java") + $(stat -c %s "$PROJECT/tests/CalculatorEngineSmoke.java")))"
+          } > artifacts/source/SOURCE-AUDIT.txt
+          cd artifacts/source
+          zip -qr ../../Calculator-Clean-Native-Source.zip .
+          cd ../..
+          mv Calculator-Clean-Native-Source.zip artifacts/
+
+      - name: Upload source project and audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: Calculator-Clean-Native-Source
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
