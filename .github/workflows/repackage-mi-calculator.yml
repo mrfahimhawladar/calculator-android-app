@@ -31,13 +31,20 @@ jobs:
           sudo apt-get install -y apktool zipalign
           apktool --version
 
-      - name: Download and verify original Xiaomi APK
+      - name: Retrieve original APK from verified source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Mi-Calculator-17.4.1-Reference-APK
+          path: source-artifact
+          run-id: 45952046119
+          github-token: ${{ github.token }}
+
+      - name: Verify original Xiaomi APK
         shell: bash
         run: |
           set -Eeuo pipefail
-          URL='https://www.apkmirror.com/wp-content/themes/APKMirror/download.php?id=17037150&key=79af0edac973ecdb230fbc0f0cec7d0d90bf6098'
-          curl --fail --location --retry 2 --retry-all-errors --connect-timeout 30 \
-            --user-agent 'Mozilla/5.0' "$URL" -o original.apk
+          test -s source-artifact/Mi-Calculator-17.4.1.apk
+          cp source-artifact/Mi-Calculator-17.4.1.apk original.apk
           test "$(stat -c '%s' original.apk)" = "10041008"
           echo "ec0929d2ff510bde653293e1bd8fd668077a27dce26dd5832da31d6718af8108  original.apk" | sha256sum --check -
           mkdir -p original-check
@@ -79,7 +86,6 @@ jobs:
                   for key in component_name_attrs:
                       value = element.attrib.get(key)
                       if value:
-                          # Resolve relative component names against the ORIGINAL DEX namespace.
                           if value.startswith("."):
                               element.set(key, old + value)
                           elif "." not in value:
