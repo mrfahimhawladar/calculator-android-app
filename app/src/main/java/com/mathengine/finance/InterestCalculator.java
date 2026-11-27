@@ -1,0 +1,2 @@
+package com.mathengine.finance;
+public final class InterestCalculator{public double simpleInterest(double p,double r,double y){valid(p,r,y);return p*r/100d*y;}public double compoundAmount(double p,double r,int n,double y){valid(p,r,y);if(n<=0||n>365)throw new IllegalArgumentException("Invalid compounding frequency");return p*Math.pow(1+r/100d/n,n*y);}private void valid(double p,double r,double y){if(!Double.isFinite(p)||p<0||!Double.isFinite(r)||r<0||!Double.isFinite(y)||y<0)throw new IllegalArgumentException("Values must be finite and non-negative");}}
