@@ -1,0 +1,102 @@
+name: Build Native Calculator APK
+
+on:
+  push:
+    branches:
+      - "build/native-calculator-apk-2026-11-27"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-calculator-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build native Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Set up Android SDK and accept SDK licences
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: "true"
+          log-accepted-android-sdk-licenses: "true"
+          packages: ""
+
+      - name: Install Android API 35 and Build Tools 35
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          test -s "$ANDROID_SDK_ROOT/platforms/android-35/android.jar"
+          test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
+          test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
+
+      - name: Reassemble uploaded native source archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/native-project"
+          cat build-input/source-parts/*.b64 | base64 --decode > "$RUNNER_TEMP/native-source.zip"
+          unzip -t "$RUNNER_TEMP/native-source.zip"
+          unzip -q "$RUNNER_TEMP/native-source.zip" -d "$RUNNER_TEMP/native-project"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/MainActivity.java"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java"
+          test -s "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
+
+      - name: Run Calculator Engine smoke tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/engine-tests"
+          javac -Xlint:all -d "$RUNNER_TEMP/engine-tests" \
+            "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java" \
+            "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
+          java -cp "$RUNNER_TEMP/engine-tests" com.mathengine.CalculatorEngineSmoke
+
+      - name: Build APK and run Android lint
+        working-directory: ${{ runner.temp }}/native-project/native-android
+        run: gradle --no-daemon --stacktrace clean lintDebug assembleDebug
+
+      - name: Verify APK structure, signature and application ID
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APK="$RUNNER_TEMP/native-project/native-android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          unzip -t "$APK" >/dev/null
+          ENTRIES="$(unzip -Z1 "$APK")"
+          grep -Fx "AndroidManifest.xml" <<<"$ENTRIES" >/dev/null
+          grep -E '^classes([0-9]+)?[.]dex$' <<<"$ENTRIES" >/dev/null
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mathengine'" >/dev/null
+          mkdir -p artifacts
+          cp "$APK" artifacts/Calculator-debug.apk
+          (cd artifacts && sha256sum Calculator-debug.apk > Calculator-debug.apk.sha256)
+          stat -c 'APK_SIZE_BYTES=%s' artifacts/Calculator-debug.apk
+          cat artifacts/Calculator-debug.apk.sha256
+          echo "NATIVE_ANDROID_APK_RESULT=PASS"
+
+      - name: Upload APK and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: Calculator-Native-Debug-APK
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
