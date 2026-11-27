@@ -75,7 +75,7 @@ jobs:
             exit 1
           fi
           grep -Rni 'applicationId' "$PROJECT/app/build.gradle"
-          grep -F 'package="com.mathengine"' "$PROJECT/app/src/main/AndroidManifest.xml"
+          grep -F 'com.mathengine' "$PROJECT/app/build.gradle"
           mkdir -p artifacts/source
           cp -a "$PROJECT" artifacts/source/native-android
           cp README.md artifacts/source/README.md
