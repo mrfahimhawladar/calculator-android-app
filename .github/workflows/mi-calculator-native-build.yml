@@ -76,6 +76,12 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           unzip -l "$APK" | grep -E 'classes.dex|AndroidManifest.xml'
           sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiCalculator-com.mathengine-native-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Install and launch on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -88,9 +94,3 @@ jobs:
             adb shell monkey -p com.mathengine 1
             sleep 8
             if adb logcat -d | grep -qE 'FATAL EXCEPTION|Process: com.mathengine'; then adb logcat -d | grep -E 'FATAL EXCEPTION|Process: com.mathengine' | tail -30; exit 1; fi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MiCalculator-com.mathengine-native-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
