@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "build/native-calculator-apk-2026-11-27"
+      - "redesign/native-calculator-2026-11-27"
 
 permissions:
   contents: read
@@ -88,6 +89,18 @@ jobs:
           test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java"
           test -s "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
 
+      - name: Fetch pinned Inter font and OFL licence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FONT_DIR="$RUNNER_TEMP/native-project/native-android/app/src/main/assets/fonts"
+          mkdir -p "$FONT_DIR"
+          INTER_REVISION="9710da1eacb3be272583c3224dcb70f9da6eadbb"
+          INTER_BASE="https://raw.githubusercontent.com/google/fonts/${INTER_REVISION}/ofl/inter"
+          curl -fL --retry 3 "$INTER_BASE/Inter%5Bopsz%2Cwght%5D.ttf" -o "$FONT_DIR/inter-variable.ttf"
+          curl -fL --retry 3 "$INTER_BASE/OFL.txt" -o "$FONT_DIR/OFL.txt"
+          test -s "$FONT_DIR/inter-variable.ttf"
+          test -s "$FONT_DIR/OFL.txt"
       - name: Run Calculator Engine smoke tests
         shell: bash
         run: |
