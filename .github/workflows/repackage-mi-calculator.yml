@@ -11,8 +11,11 @@ permissions:
 jobs:
   repackage:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
+      - name: Checkout package patcher
+        uses: actions/checkout@v4
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -25,16 +28,10 @@ jobs:
           accept-android-sdk-licenses: "true"
           packages: "build-tools;35.0.0"
 
-      - name: Install ZIP alignment utility and Apktool 3.0.3
-        shell: bash
+      - name: Install ZIP alignment utility
         run: |
-          set -Eeuo pipefail
           sudo apt-get update
           sudo apt-get install -y zipalign
-          curl --fail --location --retry 3 \
-            https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
-            -o apktool_3.0.3.jar
-          java -jar apktool_3.0.3.jar --version
 
       - name: Retrieve original APK from verified source artifact
         uses: actions/download-artifact@v4
@@ -49,102 +46,59 @@ jobs:
         run: |
           set -Eeuo pipefail
           test -s source-artifact/Mi-Calculator-17.4.1.apk
-          cp source-artifact/Mi-Calculator-17.4.1.apk original.apk
-          test "$(stat -c '%s' original.apk)" = "10041008"
-          echo "ec0929d2ff510bde653293e1bd8fd668077a27dce26dd5832da31d6718af8108  original.apk" | sha256sum --check -
+          test "$(stat -c '%s' source-artifact/Mi-Calculator-17.4.1.apk)" = "10041008"
+          echo "ec0929d2ff510bde653293e1bd8fd668077a27dce26dd5832da31d6718af8108  source-artifact/Mi-Calculator-17.4.1.apk" | sha256sum --check -
 
-      - name: Decode only manifest and change Android package ID
+      - name: Patch Android binary manifest and DEX provider authority
         shell: bash
         run: |
           set -Eeuo pipefail
-          java -jar apktool_3.0.3.jar d --force --only-manifest original.apk --output decoded
-          python3 - <<'PY'
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
+          python3 build-input/repackage-mi-calculator.py \
+            source-artifact/Mi-Calculator-17.4.1.apk \
+            Mi-Calculator-17.4.1-com.mathengine-unsigned.apk
+          test -s Mi-Calculator-17.4.1-com.mathengine-unsigned.apk
 
-          manifest = Path("decoded/AndroidManifest.xml")
-          old = "com.miui.calculator"
-          new = "com.mathengine"
-          android = "{http://schemas.android.com/apk/res/android}"
-          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
-          ET.register_namespace("dist", "http://schemas.android.com/apk/distribution")
-          ET.register_namespace("tools", "http://schemas.android.com/tools")
-
-          tree = ET.parse(manifest)
-          root = tree.getroot()
-          if root.tag != "manifest" or root.attrib.get("package") != old:
-              raise SystemExit(f"Unexpected manifest package: {root.attrib.get('package')!r}")
-          root.set("package", new)
-
-          component_tags = {
-              "application", "activity", "activity-alias", "service",
-              "receiver", "provider", "instrumentation"
-          }
-          component_name_attrs = {android + "name", android + "targetActivity"}
-          class_names_kept = 0
-          authorities_changed = 0
-
-          for element in root.iter():
-              if element.tag in component_tags:
-                  for key in component_name_attrs:
-                      value = element.attrib.get(key)
-                      if value:
-                          if value.startswith("."):
-                              element.set(key, old + value)
-                          elif "." not in value:
-                              element.set(key, old + "." + value)
-                          class_names_kept += 1
-
-              authorities_key = android + "authorities"
-              authorities = element.attrib.get(authorities_key)
-              if authorities and old in authorities:
-                  element.set(authorities_key, authorities.replace(old, new))
-                  authorities_changed += 1
-
-          tree.write(manifest, encoding="utf-8", xml_declaration=True)
-          print(f"PACKAGE_RENAMED={old}->{new}")
-          print(f"COMPONENT_CLASS_REFERENCES_PRESERVED={class_names_kept}")
-          print(f"PROVIDER_AUTHORITIES_UPDATED={authorities_changed}")
-          PY
-          grep -F 'package="com.mathengine"' decoded/AndroidManifest.xml
-          test -s decoded/resources.arsc || test -s decoded/apktool.yml
-
-      - name: Rebuild, align, and sign modified APK
+      - name: Align, sign and verify package and version
         shell: bash
         run: |
           set -Eeuo pipefail
-          java -jar apktool_3.0.3.jar b decoded --output unsigned.apk
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/zipalign" -p -f 4 unsigned.apk aligned.apk
+          BT="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          "$BT/zipalign" -p -f 4 Mi-Calculator-17.4.1-com.mathengine-unsigned.apk aligned.apk
           keytool -genkeypair -v -keystore temporary-signing.jks -storepass android \
             -keypass android -alias repackage -keyalg RSA -keysize 2048 -validity 3650 \
-            -dname "CN=Calculator Repackage, OU=Local Test, O=Independent, C=BD"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" sign \
+            -dname "CN=Mi Calculator Repackage, OU=Local Test, O=Independent, C=BD"
+          "$BT/apksigner" sign --min-sdk-version 29 \
             --ks temporary-signing.jks --ks-pass pass:android --key-pass pass:android \
             --out Mi-Calculator-17.4.1-com.mathengine.apk aligned.apk
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose Mi-Calculator-17.4.1-com.mathengine.apk
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging Mi-Calculator-17.4.1-com.mathengine.apk > badging.txt
+          "$BT/apksigner" verify --verbose Mi-Calculator-17.4.1-com.mathengine.apk
+          "$BT/aapt" dump badging Mi-Calculator-17.4.1-com.mathengine.apk > badging.txt
           grep -F "package: name='com.mathengine' versionCode='317000041' versionName='17.4.1'" badging.txt
+          "$BT/aapt" dump xmltree Mi-Calculator-17.4.1-com.mathengine.apk AndroidManifest.xml > manifest-tree.txt
+          grep -F 'com.mathengine.fileprovider' manifest-tree.txt
+          grep -F 'com.mathengine.widget.provider' manifest-tree.txt
+          grep -F 'com.mathengine.androidx-startup' manifest-tree.txt
           unzip -t Mi-Calculator-17.4.1-com.mathengine.apk >/dev/null
           mkdir -p artifacts
           cp Mi-Calculator-17.4.1-com.mathengine.apk artifacts/
           sha256sum artifacts/Mi-Calculator-17.4.1-com.mathengine.apk > artifacts/Mi-Calculator-17.4.1-com.mathengine.apk.sha256
-          CERT_SHA="$("$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs Mi-Calculator-17.4.1-com.mathengine.apk | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {print $2}')"
+          CERT_SHA="$("$BT/apksigner" verify --print-certs Mi-Calculator-17.4.1-com.mathengine.apk | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {print $2}')"
           {
-            echo "Mi Calculator repackaging report"
-            echo "Original: Xiaomi Mi Calculator 17.4.1"
+            echo "Source: Xiaomi Mi Calculator 17.4.1"
             echo "Original package: com.miui.calculator"
-            echo "New package: com.mathengine"
+            echo "Repackaged package: com.mathengine"
             echo "Version: 17.4.1 (317000041)"
-            echo "Minimum Android: 10 (API 29)"
             echo "Architecture: arm64-v8a"
+            echo "Minimum Android: 10 (API 29)"
             echo "Original APK SHA-256: ec0929d2ff510bde653293e1bd8fd668077a27dce26dd5832da31d6718af8108"
-            echo "New APK signer certificate SHA-256: $CERT_SHA"
-            echo "Signature: Valid (re-signed after modification)"
+            echo "New signing certificate SHA-256: $CERT_SHA"
+            echo "Signature: VALID"
             echo "Archive integrity: PASS"
-            echo "Note: This is a modified, independently re-signed APK, not an official Xiaomi-signed release."
+            echo "Package and version verification: PASS"
+            echo "Note: Modified independently re-signed APK; not Xiaomi-signed."
           } > artifacts/REPACKAGE-REPORT.txt
-          cat artifacts/REPACKAGE-REPORT.txt
           stat -c 'REPACKAGED_APK_SIZE_BYTES=%s' artifacts/Mi-Calculator-17.4.1-com.mathengine.apk
+          cat artifacts/Mi-Calculator-17.4.1-com.mathengine.apk.sha256
+          cat artifacts/REPACKAGE-REPORT.txt
 
       - name: Upload repackaged APK
         uses: actions/upload-artifact@v4
