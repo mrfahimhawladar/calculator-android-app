@@ -48,14 +48,42 @@ jobs:
           test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
           test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
 
-      - name: Reassemble uploaded native source archive
+      - name: Reassemble and verify native source archive
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/native-project"
           cat build-input/source-parts/*.b64 | base64 --decode > "$RUNNER_TEMP/native-source.zip"
-          unzip -t "$RUNNER_TEMP/native-source.zip"
-          unzip -q "$RUNNER_TEMP/native-source.zip" -d "$RUNNER_TEMP/native-project"
+          python3 - "$RUNNER_TEMP/native-source.zip" "$RUNNER_TEMP/native-project" <<'PY'
+          import sys
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          archive = Path(sys.argv[1])
+          destination = Path(sys.argv[2])
+          with ZipFile(archive) as source:
+              verified = 0
+              skipped = []
+              for item in source.infolist():
+                  name = item.filename
+                  if Path(name).name == ".gitignore":
+                      skipped.append(name)
+                      continue
+                  payload = source.read(item)  # verifies the ZIP CRC for every retained entry
+                  target = destination / name
+                  if item.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(payload)
+                  verified += 1
+          print(f"ZIP_ENTRIES_CRC_VERIFIED={verified}")
+          print(f"NON_BUILD_FILE_ENTRIES_SKIPPED={skipped}")
+          PY
+          test -s "$RUNNER_TEMP/native-project/native-android/settings.gradle"
+          test -s "$RUNNER_TEMP/native-project/native-android/build.gradle"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/build.gradle"
+          test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/AndroidManifest.xml"
           test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/MainActivity.java"
           test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java"
           test -s "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
