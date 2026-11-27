@@ -54,7 +54,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/native-project"
-          cat build-input/source-parts/*.b64 | base64 --decode > "$RUNNER_TEMP/native-source.zip"
+          git fetch --no-tags origin build/native-calculator-apk-2026-11-27
+          for part in 01 02 03 04; do
+            git show "origin/build/native-calculator-apk-2026-11-27:build-input/source-parts/${part}.b64"
+          done | base64 --decode > "$RUNNER_TEMP/native-source.zip"
           python3 - "$RUNNER_TEMP/native-source.zip" "$RUNNER_TEMP/native-project" <<'PY'
           import sys
           from pathlib import Path
@@ -88,6 +91,8 @@ jobs:
           test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/MainActivity.java"
           test -s "$RUNNER_TEMP/native-project/native-android/app/src/main/java/com/mathengine/CalculatorEngine.java"
           test -s "$RUNNER_TEMP/native-project/native-android/tests/CalculatorEngineSmoke.java"
+          cat build-input/redesign-patch/*.b64 | base64 --decode | gzip --decompress > "$RUNNER_TEMP/redesign.patch"
+          patch --batch --forward -p1 -d "$RUNNER_TEMP/native-project" < "$RUNNER_TEMP/redesign.patch"
 
       - name: Fetch pinned Inter font and OFL licence
         shell: bash
