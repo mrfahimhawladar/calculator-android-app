@@ -1,0 +1,94 @@
+name: MiCalculator com.mathengine Native APK
+on:
+  push:
+    branches: [mi-calculator-native-port-build]
+    paths:
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/mi-calculator-native-build.yml'
+  workflow_dispatch:
+    inputs:
+      android_sdk_licenses_acknowledged:
+        description: 'I have reviewed and accept the Android SDK license terms'
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    if: ${{ github.event_name == 'push' || inputs.android_sdk_licenses_acknowledged == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses (operator consent received)
+        run: yes | sdkmanager --licenses >/dev/null
+      - name: Install Android SDK 35 components
+        run: sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile and run regression tests
+        run: |
+          mkdir -p /tmp/tests
+          javac -d /tmp/tests app/src/main/java/com/mathengine/engine/CalculatorEngine.java app/src/main/java/com/mathengine/units/UnitConverter.java app/src/main/java/com/mathengine/finance/*.java
+          cat > /tmp/NativeSmoke.java <<'EOF'
+          import com.mathengine.engine.CalculatorEngine;
+          import com.mathengine.units.UnitConverter;
+          import com.mathengine.finance.*;
+          public class NativeSmoke {
+            public static void main(String[] a) {
+              CalculatorEngine c=new CalculatorEngine();
+              if(!"14".equals(c.evaluate("2+3*4"))) throw new AssertionError("precedence");
+              if(!"0.5".equals(c.evaluate("sin(30)"))) throw new AssertionError("sin");
+              if(Math.abs(new UnitConverter().convert(0,UnitConverter.Category.TEMPERATURE,0,1)-32)>1e-9) throw new AssertionError("temperature");
+              if(Math.abs(QuickTools.bmi(70,175)-22.857142857)>0.01) throw new AssertionError("BMI");
+              if(Math.abs(QuickTools.discountPrice(100,20)-80)>1e-9) throw new AssertionError("discount");
+              if(Math.abs(QuickTools.gstAmount(100,15)-15)>1e-9) throw new AssertionError("GST");
+              if(!"FF".equals(QuickTools.convertRadix("255",10,16))) throw new AssertionError("radix");
+              if(QuickTools.daysBetween("2024-01-01","2024-01-31")!=30) throw new AssertionError("date");
+              if(new MortgageCalculator().calculate(120000,0,120).monthlyPayment!=1000) throw new AssertionError("mortgage");
+              if(Math.abs(new InterestCalculator().simpleInterest(1000,10,2)-200)>1e-9) throw new AssertionError("interest");
+              System.out.println("10 native regression checks passed");
+            }
+          }
+          EOF
+          javac -cp /tmp/tests -d /tmp/tests /tmp/NativeSmoke.java
+          java -cp /tmp/tests NativeSmoke
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+      - name: Verify APK package, DEX, manifest and signature
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mathengine'"
+          unzip -t "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          unzip -l "$APK" | grep -E 'classes.dex|AndroidManifest.xml'
+          sha256sum "$APK"
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            adb shell monkey -p com.mathengine 1
+            sleep 8
+            if adb logcat -d | grep -E 'FATAL EXCEPTION|Process: com.mathengine' | tail -30; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiCalculator-com.mathengine-native-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
