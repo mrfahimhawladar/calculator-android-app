@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          java -jar apktool_3.0.3.jar d --force --no-src --no-res original.apk --output decoded
+          java -jar apktool_3.0.3.jar d --force --only-manifest original.apk --output decoded
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
           from pathlib import Path
