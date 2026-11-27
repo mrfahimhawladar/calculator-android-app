@@ -25,11 +25,16 @@ jobs:
           accept-android-sdk-licenses: "true"
           packages: "build-tools;35.0.0"
 
-      - name: Install APKTool and ZIP utilities
+      - name: Install ZIP alignment utility and Apktool 3.0.3
+        shell: bash
         run: |
+          set -Eeuo pipefail
           sudo apt-get update
-          sudo apt-get install -y apktool zipalign
-          apktool --version
+          sudo apt-get install -y zipalign
+          curl --fail --location --retry 3 \
+            https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar \
+            -o apktool_3.0.3.jar
+          java -jar apktool_3.0.3.jar --version
 
       - name: Retrieve original APK from verified source artifact
         uses: actions/download-artifact@v4
@@ -47,14 +52,12 @@ jobs:
           cp source-artifact/Mi-Calculator-17.4.1.apk original.apk
           test "$(stat -c '%s' original.apk)" = "10041008"
           echo "ec0929d2ff510bde653293e1bd8fd668077a27dce26dd5832da31d6718af8108  original.apk" | sha256sum --check -
-          mkdir -p original-check
-          sha256sum original.apk > original-check/original.sha256
 
-      - name: Decode APK and change Android package ID
+      - name: Decode only manifest and change Android package ID
         shell: bash
         run: |
           set -Eeuo pipefail
-          apktool d --force --no-src original.apk --output decoded
+          java -jar apktool_3.0.3.jar d --force --no-src --no-res original.apk --output decoded
           python3 - <<'PY'
           import xml.etree.ElementTree as ET
           from pathlib import Path
@@ -104,12 +107,13 @@ jobs:
           print(f"PROVIDER_AUTHORITIES_UPDATED={authorities_changed}")
           PY
           grep -F 'package="com.mathengine"' decoded/AndroidManifest.xml
+          test -s decoded/resources.arsc || test -s decoded/apktool.yml
 
       - name: Rebuild, align, and sign modified APK
         shell: bash
         run: |
           set -Eeuo pipefail
-          apktool b decoded --output unsigned.apk
+          java -jar apktool_3.0.3.jar b decoded --output unsigned.apk
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/zipalign" -p -f 4 unsigned.apk aligned.apk
           keytool -genkeypair -v -keystore temporary-signing.jks -storepass android \
             -keypass android -alias repackage -keyalg RSA -keysize 2048 -validity 3650 \
