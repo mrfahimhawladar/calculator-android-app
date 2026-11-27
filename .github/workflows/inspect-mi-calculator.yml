@@ -1,0 +1,86 @@
+name: Inspect Xiaomi Mi Calculator reference APK
+
+on:
+  push:
+    branches:
+      - recover/mi-calculator-17.4.1
+    paths:
+      - .github/workflows/inspect-mi-calculator.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  inspect-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download already recovered reference artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Mi-Calculator-17.4.1-Reference-APK
+          path: reference-apk
+          run-id: 45952046119
+          github-token: ${{ github.token }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android inspection tools
+        uses: android-actions/setup-android@v3
+
+      - name: Download JADX
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://github.com/skylot/jadx/releases/download/v1.5.1/jadx-1.5.1.zip -o jadx.zip
+          mkdir jadx-tool
+          unzip -q jadx.zip -d jadx-tool
+          chmod +x jadx-tool/bin/jadx
+
+      - name: Extract manifest, signature, resource and code reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='reference-apk/Mi-Calculator-17.4.1.apk'
+          test -s "$APK"
+          mkdir -p inspection
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" >/dev/null
+          AAPT2="$ANDROID_HOME/build-tools/35.0.0/aapt2"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          APKANALYZER="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > inspection/signature.txt 2>&1
+          "$APKANALYZER" manifest print "$APK" > inspection/AndroidManifest-decoded.xml
+          "$AAPT2" dump badging "$APK" > inspection/badging.txt
+          "$AAPT2" dump resources "$APK" > inspection/resources.txt
+          "$AAPT2" dump configurations "$APK" > inspection/configurations.txt
+          sha256sum "$APK" > inspection/apk-sha256.txt
+          unzip -l "$APK" > inspection/archive-contents.txt
+          unzip -p "$APK" assets/default_data/data.json > inspection/default-data.json || true
+          unzip -p "$APK" assets/default_data/units_currency > inspection/units-currency.txt || true
+          unzip -p "$APK" assets/default_data/units_data > inspection/units-data.txt || true
+          jadx-tool/bin/jadx --deobf --show-bad-code -d inspection/jadx "$APK" > inspection/jadx.log 2>&1 || true
+          find inspection/jadx/sources -type f \( -name '*.java' -o -name '*.kt' \) | sort > inspection/source-files.txt
+          grep -RniE 'scientific|mortgage|currency|converter|discount|bmi|age|GST|tax|history|date calculator|factorial|trigonometric' inspection/jadx/sources > inspection/feature-symbol-hits.txt || true
+          {
+            echo "APK_BYTES=$(stat -c %s "$APK")"
+            echo "SOURCE_FILE_COUNT=$(wc -l < inspection/source-files.txt)"
+            echo "SOURCE_PACKAGE_DIRS:"
+            find inspection/jadx/sources -mindepth 1 -maxdepth 4 -type d | sort | head -250
+            echo "MANIFEST_COMPONENT_LINES:"
+            grep -E 'package=|<activity|<service|<receiver|<provider|android:name=|android:exported=|android:label=|android:theme=' inspection/AndroidManifest-decoded.xml | head -300
+          } > inspection/overview.txt
+          zip -qr Mi-Calculator-17.4.1-Inspection.zip inspection
+          du -h Mi-Calculator-17.4.1-Inspection.zip inspection/overview.txt
+
+      - name: Upload inspection results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mi-Calculator-17.4.1-Inspection
+          path: Mi-Calculator-17.4.1-Inspection.zip
+          if-no-files-found: error
+          retention-days: 7
