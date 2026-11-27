@@ -1,5 +1,5 @@
 package com.mathengine.app;
-import android.app.*;import android.os.Bundle;import android.graphics.Color;import android.graphics.Typeface;import android.graphics.drawable.GradientDrawable;import android.view.Gravity;import android.widget.*;import android.text.InputType;
+import android.app.*;import android.os.Bundle;import android.view.View;import android.graphics.Color;import android.graphics.Typeface;import android.graphics.drawable.GradientDrawable;import android.view.Gravity;import android.widget.*;import android.text.InputType;
 import com.mathengine.engine.CalculatorEngine;import com.mathengine.storage.HistoryStore;import com.mathengine.units.UnitConverter;import com.mathengine.finance.*;import com.mathengine.data.OfflineCurrencyRates;
 public final class MainActivity extends Activity{
 private final int BG=0xff10110f,KEY=0xff2b2e28,PANEL=0xff1e201c,ACCENT=0xffd7ff64,MUTED=0xff9ea494;private CalculatorEngine engine=new CalculatorEngine();private HistoryStore history;private TextView expression,result,mode;private String current="";private boolean evaluated=false,degrees=true;
