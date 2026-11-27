@@ -111,7 +111,7 @@ def patch_dex(dex):
         units, p = read_uleb(dex, off)
         end = dex.find(b"\0", p)
         if end < 0: raise ValueError("Bad DEX string")
-        if dex[p:end].decode("utf-8") == target:
+        if dex[p:end].decode("utf-8", errors="replace") == target:
             nexts = [x for x in ordered if x > off]
             cap = (min(nexts) if nexts else len(dex)) - off
             item = uleb(len(replacement)) + replacement + b"\0"
